@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <!-- interface-requires gtk+ 3.0 -->
+  <object class="GtkListStore" id="assistant_import_deutschepostcsv_liststore">
+    <columns>
+      <!-- column-name import -->
+      <column type="gboolean"/>
+      <!-- column-name familyname -->
+      <column type="gchararray"/>
+      <!-- column-name prename -->
+      <column type="gchararray"/>
+      <!-- column-name honourific -->
+      <column type="gchararray"/>
+      <!-- column-name title -->
+      <column type="gchararray"/>
+      <!-- column-name gender -->
+      <column type="gint"/>
+      <!-- column-name company1 -->
+      <column type="gchararray"/>
+      <!-- column-name company2 -->
+      <column type="gchararray"/>
+      <!-- column-name department -->
+      <column type="gchararray"/>
+      <!-- column-name co -->
+      <column type="gchararray"/>
+      <!-- column-name street -->
+      <column type="gchararray"/>
+      <!-- column-name zipcode -->
+      <column type="gchararray"/>
+      <!-- column-name city -->
+      <column type="gchararray"/>
+      <!-- column-name country -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="assistant_import_deutschepostcsv_missingdata_liststore">
+    <columns>
+      <!-- column-name column -->
+      <column type="gchararray"/>
+      <!-- column-name number_of_rows -->
+      <column type="gint"/>
+    </columns>
+  </object>
+  <object class="GtkAdjustment" id="customera_import_deutschepostcsv_missingdata_vadjustment">
+    <property name="upper">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAssistant" id="assistant_import_deutschepostcsv">
+    <property name="height_request">300</property>
+    <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Kundendaten aus CSV-Datei der Deutschen Post importieren</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="window_position">center</property>
+    <property name="destroy_with_parent">True</property>
+    <property name="icon_name">address-book-new</property>
+    <property name="has_resize_grip">False</property>
+    <signal name="close" handler="assistant_import_deutschepostcsv_close_cb" swapped="no"/>
+    <signal name="apply" handler="assistant_import_deutschepostcsv_apply_cb" swapped="no"/>
+    <signal name="cancel" handler="assistant_import_deutschepostcsv_cancel_cb" swapped="no"/>
+    <signal name="prepare" handler="assistant_import_deutschepostcsv_prepare_cb" swapped="no"/>
+    <child>
+      <object class="GtkBox" id="assistant_import_deutschepostcsv_page_begin">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="label3">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_bottom">6</property>
+            <property name="xalign">0</property>
+            <property name="yalign">0</property>
+            <property name="label" translatable="yes">Mit diesem Tool kannst Du CSV-Daten der &lt;i&gt;Deutschen Post&lt;/i&gt; als Kundendaten importieren, z.B. exportierte Daten aus dem &lt;i&gt;Manager Presse Distribution&lt;/i&gt;.</property>
+            <property name="use_markup">True</property>
+            <property name="wrap">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label53">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="valign">end</property>
+            <property name="label" translatable="yes">Um zu starten, wähle bitte eine Datei aus und klicke auf &lt;i&gt;Fortsetzen&lt;/i&gt;.</property>
+            <property name="use_markup">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="box22">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="valign">end</property>
+            <property name="margin_left">1</property>
+            <child>
+              <object class="GtkToggleButton" id="assistant_import_deutschepostcsv_open_togglebutton">
+                <property name="label">gtk-open</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="receives_default">True</property>
+                <property name="use_stock">True</property>
+                <signal name="toggled" handler="assistant_import_deutschepostcsv_open_togglebutton_toggled_cb" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="assistant_import_deutschepostcsv_open_entry">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="editable">False</property>
+                <property name="invisible_char">●</property>
+                <property name="placeholder_text">Bitte Datei auswählen</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack_type">end</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">intro</property>
+        <property name="title" translatable="yes">Datei zum Import auswählen</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="assistant_import_deutschepostcsv_page_check">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="assistant_import_deutschepostcsv_datacheck_label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_bottom">6</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">Bitte warten, lade ...</property>
+            <property name="use_markup">True</property>
+            <property name="wrap">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="assistant_import_deutschepostcsv_datacheck_scrolledwindow">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hadjustment">customers_scrolledwindow_hadjustment</property>
+            <property name="vadjustment">customers_scrolledwindow_vadjustment</property>
+            <child>
+              <object class="GtkTreeView" id="assistant_import_deutschepostcsv_datacheck_treeview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="vexpand">True</property>
+                <property name="model">assistant_import_deutschepostcsv_liststore</property>
+                <property name="rules_hint">True</property>
+                <property name="search_column">1</property>
+                <property name="fixed_height_mode">True</property>
+                <property name="show_expanders">False</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="assistant_import_deutschepostcsv_datacheck_treeview_selection"/>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_datacheck_treeviewcolumn1">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">25</property>
+                    <property name="title" translatable="yes">Import</property>
+                    <property name="clickable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">0</property>
+                    <child>
+                      <object class="GtkCellRendererToggle" id="assistant_import_deutschepostcsv_datacheck_import_cellrenderertoggle"/>
+                      <attributes>
+                        <attribute name="active">0</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_datacheck_treeviewcolumn2">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">114</property>
+                    <property name="title" translatable="yes">Nachname</property>
+                    <property name="clickable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">1</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_datacheck_familyname_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">1</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_datacheck_treeviewcolumn3">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">100</property>
+                    <property name="title" translatable="yes">Vorname</property>
+                    <property name="clickable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">2</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_datacheck_prename_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">2</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_datacheck_treeviewcolumn10">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">150</property>
+                    <property name="title" translatable="yes">Straße</property>
+                    <property name="clickable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">10</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_datacheck_street_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">10</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_datacheck_treeviewcolumn11">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">80</property>
+                    <property name="title" translatable="yes">PLZ</property>
+                    <property name="clickable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">11</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_datacheck_zipcode_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">11</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_datacheck_treeviewcolumn12">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">100</property>
+                    <property name="title" translatable="yes">Ort</property>
+                    <property name="clickable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">12</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_datacheck_city_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">12</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="title" translatable="yes">Daten überprüfen</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="assistant_import_deutschepostcsv_page_confirm">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkLabel" id="label49">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="yalign">0</property>
+            <property name="label" translatable="yes">Vielen Dank. Mit einem Klick auf &lt;i&gt;Anwenden&lt;/i&gt; werden die Datensätze in die Datenbank eingefügt.</property>
+            <property name="use_markup">True</property>
+            <property name="wrap">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkGrid" id="grid8">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkLabel" id="label52">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">15</property>
+                <property name="xalign">1</property>
+                <property name="yalign">0</property>
+                <property name="label" translatable="yes">davon zum Import markiert: </property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="label50">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">1</property>
+                <property name="yalign">0</property>
+                <property name="label" translatable="yes">Gefundene Datensätze: </property>
+                <attributes>
+                  <attribute name="weight" value="bold"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="assistant_import_deutschepostcsv_rowsfound_label">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">Bitte warten, lade ..</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">0</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="assistant_import_deutschepostcsv_rowsimport_label">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes">Bitte warten, lade ..</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+                <property name="width">1</property>
+                <property name="height">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label55">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+            <property name="label" translatable="yes">In den folgenden Spalten fehlen Daten:</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledwindow5">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="vadjustment">customera_import_deutschepostcsv_missingdata_vadjustment</property>
+            <property name="hscrollbar_policy">never</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkTreeView" id="assistant_import_deutschepostcsv_missingdata_treeview">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="model">assistant_import_deutschepostcsv_missingdata_liststore</property>
+                <property name="fixed_height_mode">True</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="assistant_import_deutschepostcsv_missingdata_treeview_selection"/>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_missingdata_column_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">200</property>
+                    <property name="title" translatable="yes">Feld</property>
+                    <property name="reorderable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">0</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_missingdata_column_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">0</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="assistant_import_deutschepostcsv_missingdata_numrows_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">150</property>
+                    <property name="title" translatable="yes">Anzahl der Datensätze</property>
+                    <property name="reorderable">True</property>
+                    <property name="sort_indicator">True</property>
+                    <property name="sort_column_id">1</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="assistant_import_deutschepostcsv_missingdata_numrows_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">1</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="page_type">confirm</property>
+        <property name="title" translatable="yes">Import starten</property>
+      </packing>
+    </child>
+    <child internal-child="action_area">
+      <object class="GtkBox" id="assistant-action_area1">
+        <property name="can_focus">False</property>
+        <property name="halign">end</property>
+        <property name="spacing">6</property>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
+<interface>
+  <requires lib="gtk+" version="3.10"/>
+  <object class="GtkListStore" id="addresses_liststore">
+    <columns>
+      <!-- column-name address -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="GtkWindow" id="dummywindow">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkBox" id="content">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkButtonBox" id="buttonbox4">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="layout_style">start</property>
+            <child>
+              <object class="GtkButton" id="addresses_add_button">
+                <property name="label">gtk-add</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="relief">none</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="addresses_add_button_clicked_cb" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="addresses_remove_button">
+                <property name="label">gtk-remove</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="relief">none</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="addresses_remove_button_clicked_cb" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledwindow2">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="margin_left">1</property>
+            <property name="margin_right">1</property>
+            <property name="margin_top">1</property>
+            <property name="margin_bottom">1</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="window_placement">bottom-right</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkTreeView" id="addresses_treeview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="model">addresses_liststore</property>
+                <property name="headers_clickable">False</property>
+                <property name="search_column">0</property>
+                <property name="fixed_height_mode">True</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="addresses_treeview_selection">
+                    <signal name="changed" handler="addresses_treeview_selection_changed_cb" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="addresses_street_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">180</property>
+                    <property name="title" translatable="yes">Straße</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="addresses_street_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Leer»</property>
+                        <signal name="edited" handler="addresses_street_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="addresses_zipcode_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">70</property>
+                    <property name="title" translatable="yes">PLZ</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="addresses_zipcode_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Leer»</property>
+                        <signal name="edited" handler="addresses_zipcode_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="addresses_city_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">100</property>
+                    <property name="title" translatable="yes">Ort</property>
+                    <signal name="clicked" handler="addresses_city_cellrenderertext_edited_cb" swapped="no"/>
+                    <child>
+                      <object class="GtkCellRendererText" id="addresses_city_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Leer»</property>
+                        <signal name="edited" handler="addresses_city_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="addresses_co_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">20</property>
+                    <property name="title" translatable="yes">c/o</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="addresses_co_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Optional»</property>
+                        <signal name="edited" handler="addresses_co_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

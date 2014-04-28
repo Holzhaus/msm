@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <menu id="appmenu">
+    <section>
+      <item>
+        <attribute name="label">Einstellungen</attribute>
+        <attribute name="action">app.settings</attribute>
+      </item>
+      <item>
+        <attribute name="label">Kundendaten Leeren</attribute>
+        <attribute name="action">app.cleardata</attribute>
+      </item>
+      <item>
+        <attribute name ="label">Beenden</attribute>
+        <attribute name="action">app.quit</attribute>
+        <attribute name="accel">&lt;Primary&gt;q</attribute> 
+      </item>
+    </section>
+  </menu>
+  <menu id="menubar">
+    <submenu>
+      <attribute name="label">Buchführung</attribute>
+      <section>
+        <item>
+          <attribute name ="label">Automatische Sollstellung</attribute>
+          <attribute name="action">win.automaticdebiting</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label">Import</attribute>
+      <section>
+        <item>
+          <attribute name ="label">DPAG-CSV</attribute>
+          <attribute name="action">win.import_dpag</attribute>
+        </item>
+		<item>
+          <attribute name ="label">Sparda-XLS</attribute>
+          <attribute name="action">win.import_spardaxls</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label">Export</attribute>
+      <section>
+        <item>
+          <attribute name ="label">Verschickungsdaten</attribute>
+          <attribute name="action">win.export_shipmentdata</attribute>
+        </item>
+        <item>
+          <attribute name ="label">Lastschriftdaten</attribute>
+          <attribute name="action">win.export_sepadata</attribute>
+        </item>
+        <item>
+          <attribute name ="label">Rechnungen erstellen</attribute>
+          <attribute name="action">win.export_invoices</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
+      <attribute name="label">Hilfe</attribute>
+      <section>
+        <item>
+          <attribute name ="label">Über MSM</attribute>
+          <attribute name="action">win.about</attribute>
+        </item>
+      </section>
+    </submenu>
+  </menu>
+</interface>

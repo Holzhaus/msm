@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.2 -->
+<interface>
+  <requires lib="gtk+" version="3.0"/>
+  <object class="GtkListStore" id="invoices_liststore">
+    <columns>
+      <!-- column-name invoice -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="GtkTreeModelFilter" id="invoices_treemodelfilter">
+    <property name="child_model">invoices_liststore</property>
+  </object>
+  <object class="GtkTreeModelSort" id="invoices_treemodelsort">
+    <property name="model">invoices_treemodelfilter</property>
+  </object>
+  <object class="GtkAdjustment" id="invoices_scrolledwindow_hadjustment">
+    <property name="upper">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="invoices_scrolledwindow_vadjustment">
+    <property name="upper">100</property>
+    <property name="step_increment">1</property>
+    <property name="page_increment">10</property>
+  </object>
+  <object class="GtkWindow" id="dummywindow">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkScrolledWindow" id="content">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+        <property name="hadjustment">invoices_scrolledwindow_hadjustment</property>
+        <property name="vadjustment">invoices_scrolledwindow_vadjustment</property>
+        <child>
+          <object class="GtkTreeView" id="invoices_treeview">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="model">invoices_treemodelsort</property>
+            <property name="rules_hint">True</property>
+            <property name="search_column">1</property>
+            <property name="fixed_height_mode">True</property>
+            <property name="show_expanders">False</property>
+            <property name="enable_grid_lines">vertical</property>
+            <signal name="button-press-event" handler="invoices_treeview_button_press_event_cb" swapped="no"/>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="invoices_treeview_selection">
+                <signal name="changed" handler="invoices_treeview_selection_changed_cb" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoice_previewpdf_treeviewcolumn">
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">20</property>
+                <child>
+                  <object class="GtkCellRendererPixbuf" id="invoice_previewpdf_cellrendererpixbuf">
+                    <property name="stock_id">gtk-print-preview</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoices_id_treeviewcolumn">
+                <property name="resizable">True</property>
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">50</property>
+                <property name="title" translatable="yes">ID</property>
+                <property name="clickable">True</property>
+                <property name="sort_indicator">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="invoices_id_cellrenderertext"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoices_contractrefid_treeviewcolumn">
+                <property name="resizable">True</property>
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">80</property>
+                <property name="title" translatable="yes">Vetragsnummer</property>
+                <property name="clickable">True</property>
+                <property name="sort_indicator">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="invoices_contractrefid_cellrenderertext"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoices_number_treeviewcolumn">
+                <property name="resizable">True</property>
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">80</property>
+                <property name="title" translatable="yes">Rechnungsnr.</property>
+                <property name="clickable">True</property>
+                <property name="sort_indicator">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="invoices_number_cellrenderertext"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoices_date_treeviewcolumn">
+                <property name="resizable">True</property>
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">114</property>
+                <property name="title" translatable="yes">Datum</property>
+                <property name="clickable">True</property>
+                <property name="sort_indicator">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="invoices_date_cellrenderertext"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoices_value_treeviewcolumn">
+                <property name="resizable">True</property>
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">100</property>
+                <property name="title" translatable="yes">Betrag</property>
+                <property name="clickable">True</property>
+                <property name="sort_indicator">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="invoices_value_cellrenderertext"/>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="invoices_valueleft_treeviewcolumn">
+                <property name="resizable">True</property>
+                <property name="sizing">fixed</property>
+                <property name="fixed_width">150</property>
+                <property name="title" translatable="yes">Offen</property>
+                <property name="clickable">True</property>
+                <property name="sort_indicator">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="invoices_valueleft_cellrenderertext"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -1,0 +1,3 @@
+\documentclass[position]{scrlttr2}
+\input{ %{{ filename %}} }
+\endinput

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.16.1 -->
+<interface>
+  <requires lib="gtk+" version="3.10"/>
+  <object class="GtkListStore" id="bankaccounts_liststore">
+    <columns>
+      <!-- column-name bankaccount -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="GtkWindow" id="dummywindow">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkBox" id="content">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkButtonBox" id="buttonbox7">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="layout_style">start</property>
+            <child>
+              <object class="GtkButton" id="bankaccounts_add_button">
+                <property name="label">gtk-add</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="relief">none</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="bankaccounts_add_button_clicked_cb" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="bankaccounts_remove_button">
+                <property name="label">gtk-remove</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="relief">none</property>
+                <property name="use_stock">True</property>
+                <property name="always_show_image">True</property>
+                <signal name="clicked" handler="bankaccounts_remove_button_clicked_cb" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledwindow1">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="margin_left">1</property>
+            <property name="margin_right">1</property>
+            <property name="margin_top">1</property>
+            <property name="margin_bottom">1</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkTreeView" id="bankaccounts_treeview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="has_tooltip">True</property>
+                <property name="model">bankaccounts_liststore</property>
+                <property name="headers_clickable">False</property>
+                <property name="search_column">0</property>
+                <property name="tooltip_column">0</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="bankaccounts_treeview_selection">
+                    <signal name="changed" handler="bankaccounts_treeview_selection_changed_cb" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="bankaccounts_iban_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">100</property>
+                    <property name="title" translatable="yes">IBAN</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="bankaccounts_iban_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Leer»</property>
+                        <signal name="edited" handler="bankaccounts_iban_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="bankaccounts_bic_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">100</property>
+                    <property name="title" translatable="yes">BIC</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="bankaccounts_bic_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Optional»</property>
+                        <signal name="edited" handler="bankaccounts_bic_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="bankaccounts_bank_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">100</property>
+                    <property name="title" translatable="yes">Institut</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="bankaccounts_bank_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Optional»</property>
+                        <signal name="edited" handler="bankaccounts_bank_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="bankaccounts_owner_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">110</property>
+                    <property name="title" translatable="yes">Kontoinh.</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="bankaccounts_owner_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Optional»</property>
+                        <signal name="edited" handler="bankaccounts_owner_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

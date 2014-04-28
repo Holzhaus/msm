@@ -1,0 +1,30 @@
+\documentclass[position]{scrlttr2}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{marvosym}
+\DeclareUnicodeCharacter{20AC}{\EUR{}}
+\usepackage{graphicx,xcolor,eso-pic,tabularx}
+\usepackage{verbatimbox}
+\begin{document}
+\begin{letter}{((( recipient|escape_tex|escape_nl )))}
+\setkomavar{signature}{((( signature|escape_tex|escape_nl )))}
+\setkomavar{date}{((( date )))}
+\setkomavar{subject}{((( subject|escape_tex|escape_nl )))}
+\opening{((( opening|escape_tex|escape_nl )))}
+
+anbei finden Sie die Rechnung für das ((( subscription_name|escape_tex|escape_nl ))) der Zeitschrift „((( magazine_name|escape_tex|escape_nl )))“.
+
+\addvbuffer[12pt 8pt]{\begin{tabularx}{\textwidth}{|lX|r|}
+\hline
+& \textbf{Bezeichnung} & \textbf{Betrag}\\\hline
+((* for entry in entries *))
+    ((( entry.position|escape_tex|escape_nl ))) & ((( entry.description|escape_tex|escape_nl ))) & ((( entry.value|escape_nl )))\\\hline
+((* endfor *))
+\multicolumn{2}{|r|}{\textbf{Gesamtbetrag}} & ((( total|escape_tex|escape_nl )))\\\hline
+\end{tabularx}}
+
+Bitte überweisen Sie den oben genannten Betrag binnen zwei Wochen mit dem Verwendungszweck \emph{ ((( invoice_no|escape_tex|escape_nl ))) } auf das angegebene Konto.
+
+\closing{ ((( closing|escape_tex|escape_nl ))) }
+\end{letter}
+\end{document}

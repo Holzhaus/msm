@@ -1,0 +1,16 @@
+\documentclass[position]{scrlttr2}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx,xcolor,eso-pic,tabularx}
+\begin{document}
+\begin{letter}{$recipient}
+\setkomavar{signature}{$signature}
+\setkomavar{date}{$date}
+\setkomavar{subject}{$subject}
+\opening{$opening}
+
+$text
+
+\closing{$closing}
+\end{letter}
+\end{document}

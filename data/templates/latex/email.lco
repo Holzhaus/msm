@@ -1,0 +1,32 @@
+%
+% email.lco
+%
+% This is a demo lco file only.
+%
+
+\ProvidesFile{email.lco}[2005/04/06 v0.1 unsupported demo letter class option]
+\RequirePackage{graphicx}
+
+\KOMAoptions{foldmarks=false,addrfield=false,subject=titled,parskip}
+\renewcommand{\familydefault}{\ttdefault}
+\raggedright
+
+\firsthead{%
+  \raggedright
+  \makebox[0pt][r]{\rotatebox{90}{%
+      \makebox[0pt][r]{\rmfamily\huge Eingetroffen per E-Mail}}\quad}%
+  \usekomavar*{fromname}: \usekomavar{fromname}\\
+  \usekomavar*{toname}: \usekomavar{toname},\\
+  \quad\usekomavar{toaddress}\\
+  \usekomavar*{date}: \usekomavar{date}\\
+}
+
+\firstfoot{}
+
+\@setplength{refvpos}{-2\baselineskip}% Datum verschwinden lassen
+\@setplength{refaftervskip}{\useplength{firstheadvpos}}
+\@addtoplength{refaftervskip}{4\baselineskip}
+\@addtoplength{refaftervskip}{7pt}
+\@setplength{firstheadwidth}{\textwidth}
+\let\raggedsignature\raggedright
+

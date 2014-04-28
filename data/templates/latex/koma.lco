@@ -1,0 +1,16 @@
+\ProvidesFile{koma.lco}%
+             [2005/04/09 v0.2a unsupported LCO-file]%
+
+\setkomavar{fromname}{Markus Kohm}
+\setkomavar{fromaddress}{Mustergasse 7\\12345 Musterhausen}
+\setkomavar{fromemail}{komascript@gmx.info}
+\setkomavar{fromurl}[]{http://www.komascript.de}
+\setkomavar{fromlogo}{%
+  \raisebox{1cm}{\scalebox{1.5}{\Huge\bfseries\KOMAScript}}% Hack
+}
+\setkomafont{fromname}{\fontsize{10}{12}\sffamily}
+\setkomafont{fromaddress}{\fontsize{10}{12}\sffamily}
+
+\RequirePackage{graphicx}
+
+\KOMAoptions{fromemail,fromurl}
