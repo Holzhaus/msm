@@ -85,7 +85,6 @@ class MainWindow( Gtk.ApplicationWindow ):
             if customer:
                 self.customereditor.startEdit( customer )
     def menu_export_directwithdrawaldata_imagemenuitem_activate_cb( self, menuitem ):
-        # TODO: implement
         filename = "/tmp/DTAUS0.txt"
         format = 'DTA'
         self.manager.exportBankTransactions( filename, format, creation_date=datetime.date.today(), execution_date=datetime.date.today() )

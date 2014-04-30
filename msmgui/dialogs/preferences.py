@@ -93,51 +93,14 @@ class PreferencesDialog( object ):
                 entry.set_text( dialog.get_filename() )
             dialog.destroy()
         button.set_active( False )
+    """ Callbacks """
     def response_cb( self, dialog, response ):
-        if response == 1:  # if OK button was clicked:
-            # save values
+        """Response Callback of the Gtk.Dialog"""
+        if response == 1: # Save new config values
             core.config.Configuration().set( "Autocompletion", "bic_file", self.builder.get_object( 'general_bic_open_entry' ).get_text() )
             core.config.Configuration().set( "Autocompletion", "zipcode_file", self.builder.get_object( 'general_zipcode_open_entry' ).get_text() )
-            # TODO: continue here
             PreferencesDialog.session().commit()
-            """magazine_name = self.builder.get_object( 'magazine_name_entry' ).get_text()
-            magazine_issuesperyear = self.builder.get_object( 'magazine_issuesperyear_spinbutton' ).get_value()
-            # check values
-            magazine_name = magazine_name if magazine_name else 'Unbenanntes Magazin'
-            magazine_issuesperyear = int( magazine_issuesperyear )
-            if magazine_issuesperyear == 0:
-                raise ValueError( "Invalid!" )
-            #save
-            magazines = self.manager.getMagazines()
-            if magazines.count() != 1:
-                raise Exception( "There has to be exactly one magazine in the database" )
-            magazine = magazines.first()
-            magazine.name = magazine_name
-            magazine.issues_per_year = magazine_issuesperyear
-            issues_liststore = self.builder.get_object( 'preferences_dialog_issues_liststore' )
-            issues_to_delete = [issue for issue in magazine.issues if not any( issue.id == row[0] for row in issues_liststore )]
-            for issue in issues_to_delete:
-                self.manager.delete( issue, flush=False )
-            for ( issue_id, magazine_id, year, number, date, date_sortable ) in issues_liststore:
-                if not date:
-                    print( "DEBUG: date empty, row not saved" )
-                    continue
-                try:
-                    year = int( year )
-                    number = int( number )
-                    date = dateutil.parser.parse( date, dayfirst=True ).date()
-                except TypeError:
-                    raise ValueError( "Invalid values for year, number or date. ", year, number, date )
-                    continue
-                if issue_id:
-                    issue = self.manager.getIssueById( issue_id )
-                    issue.year = year
-                    issue.number = number
-                    issue.date = date
-                else:
-                    issue = magazine.addIssue( year, number, date )"""
-            # TODO: implement
-        else:
+        else: # Discard new config values
             PreferencesDialog.session().rollback()
         PreferencesDialog.session().close()
         self.hide()

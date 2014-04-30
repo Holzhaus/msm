@@ -1,62 +1,62 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
-from core.database import *
+import core.database
 from core.config import Configuration
 import locale
 import msmgui.rowreference
 class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
-        builder = None
-        @staticmethod
-        def new_by_iter( model, treeiter ):
-            """Convenience method that creates an instance by Gtk.TreeIter, not by Gtk.TreePath"""
-            path = model.get_path( treeiter )
-            rowref = CustomerRowReference( model, path )
-            return rowref
-        def __init__( self, model, path ):
-            """Constructor. Internally, the reference always points to the row in the base Gtk.TreeModel."""
-            treeiter = model.get_iter( path )
-            while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
-                treeiter = model.convert_iter_to_child_iter( treeiter )
-                model = model.get_model()
-            path = model.get_path( treeiter )
-            if model is not CustomerRowReference.builder.get_object( "customers_liststore" ) or not isinstance( model, Gtk.ListStore ):
-                raise TypeError( "Specified base TreeModel is invalid" )
-            self._rowref = Gtk.TreeRowReference.new( model, path )
-        def get_selection_iter( self ):
-            """Return the Gtk.TreeIter for the selection Gtk.TreeModel."""
-            treeiter = self.get_iter()
-            success, treeiter = CustomerRowReference.builder.get_object( "customers_treemodelfilter" ).convert_child_iter_to_iter( treeiter )
-            if not success:
-                raise ValueError( "TreeIter invalid" )
-            success, treeiter = self.get_selection_model().convert_child_iter_to_iter( treeiter )
-            if not success:
-                raise ValueError( "TreeIter invalid" )
-            return treeiter
-        def get_selection_path( self ):
-            """Return the Gtk.TreePath for the selection Gtk.TreeModel."""
-            model = self.get_selection_model()
-            treeiter = self.get_selection_iter()
-            path = model.get_path( treeiter )
-            return path
-        def get_selection_model( self ):
-            """Return the selection Gtk.TreeModel."""
-            model = CustomerRowReference.builder.get_object( "customers_treemodelsort" )
-            if not isinstance( model, Gtk.TreeModelSort ):
-                raise TypeError( "Specified selection TreeModel is invalid" )
-            return model
-        def get_customer( self ):
-            """Returns the core.database.Customer that is associated with the Gtk.TreeRow that this instance references."""
-            row = self.get_row()
-            customer_id = row[0]
-            return core.database.Customer.get_by_id( customer_id )
-        def update_row( self ):
-            customer = self.get_customer()
-            self.set_row( CustomerTable.convert_customer_to_rowdata( customer ) )
+    builder = None
+    @staticmethod
+    def new_by_iter( model, treeiter ):
+        """Convenience method that creates an instance by Gtk.TreeIter, not by Gtk.TreePath"""
+        path = model.get_path( treeiter )
+        rowref = CustomerRowReference( model, path )
+        return rowref
+    def __init__( self, model, path ):
+        """Constructor. Internally, the reference always points to the row in the base Gtk.TreeModel."""
+        treeiter = model.get_iter( path )
+        while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
+            treeiter = model.convert_iter_to_child_iter( treeiter )
+            model = model.get_model()
+        path = model.get_path( treeiter )
+        if model is not CustomerRowReference.builder.get_object( "customers_liststore" ) or not isinstance( model, Gtk.ListStore ):
+            raise TypeError( "Specified base TreeModel is invalid" )
+        self._rowref = Gtk.TreeRowReference.new( model, path )
+    def get_selection_iter( self ):
+        """Return the Gtk.TreeIter for the selection Gtk.TreeModel."""
+        treeiter = self.get_iter()
+        success, treeiter = CustomerRowReference.builder.get_object( "customers_treemodelfilter" ).convert_child_iter_to_iter( treeiter )
+        if not success:
+            raise ValueError( "TreeIter invalid" )
+        success, treeiter = self.get_selection_model().convert_child_iter_to_iter( treeiter )
+        if not success:
+            raise ValueError( "TreeIter invalid" )
+        return treeiter
+    def get_selection_path( self ):
+        """Return the Gtk.TreePath for the selection Gtk.TreeModel."""
+        model = self.get_selection_model()
+        treeiter = self.get_selection_iter()
+        path = model.get_path( treeiter )
+        return path
+    def get_selection_model( self ):
+        """Return the selection Gtk.TreeModel."""
+        model = CustomerRowReference.builder.get_object( "customers_treemodelsort" )
+        if not isinstance( model, Gtk.TreeModelSort ):
+            raise TypeError( "Specified selection TreeModel is invalid" )
+        return model
+    def get_customer( self ):
+        """Returns the core.database.Customer that is associated with the Gtk.TreeRow that this instance references."""
+        row = self.get_row()
+        customer_id = row[0]
+        return core.database.Customer.get_by_id( customer_id )
+    def update_row( self ):
+        customer = self.get_customer()
+        self.set_row( CustomerTable.convert_customer_to_rowdata( customer ) )
 
 class CustomerTable( Gtk.Box ):
-    MIN_FILTER_LEN = 3  # what is the minimum length for the filter string
-    FILTER_COLUMNS = ( 1, 2, 11, 12 )  # which columns should be used for filtering
+    MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
+    FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
         'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
@@ -124,7 +124,7 @@ class CustomerTable( Gtk.Box ):
         self.session.remove()
         model = rowref.get_model()
         treeiter = rowref.get_iter()
-        model.remove( treeiter )  # Remove row from table
+        model.remove( treeiter ) # Remove row from table
     """Getting and setting rows"""
     def _get_rowref_by_customer_id( self, customer_id ):
         if not isinstance( customer_id, int ):
@@ -172,10 +172,10 @@ class CustomerTable( Gtk.Box ):
         rowref = CustomerRowReference.new_by_iter( model, treeiter )
         if rowref == self.selection:
             # if self.selection and self.selection.get_row() is row:
-            return True  # Prevent currently selected row from being hidden
+            return True # Prevent currently selected row from being hidden
         row = rowref.get_row()
         if self.active_only and not row[14]:
-            return False  # if active_only is True, then customers without contracts are hidden
+            return False # if active_only is True, then customers without contracts are hidden
         if len( self.filter ) < CustomerTable.MIN_FILTER_LEN:
             return True
         else:
@@ -224,7 +224,7 @@ class CustomerTable( Gtk.Box ):
     """Callbacks"""
     def customers_treeview_selection_changed_cb( self, selection ):
         if self.selection_blocked:
-            self.selection = self.selection  # Restore current selection
+            self.selection = self.selection # Restore current selection
             return
         model, treeiter = selection.get_selected()
         if treeiter:

@@ -175,7 +175,7 @@ class AddressEditor( Gtk.Box ):
                             new_desc = model[firstiter][7]
                             self.parent.addStatusMessage( "Die Adresse „%s“ wurde in Verträgen automatisch durch „%s“ ersetzt." % ( desc, new_desc ) )
                         else:
-                            # TODO: implement replacement address selection window
+                            # implement replacement address selection window
                             new_crefid = 0
                             new_desc = ""
                         for row in contracts_model:  # change crefid in contracts to new_crefid

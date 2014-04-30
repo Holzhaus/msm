@@ -44,5 +44,5 @@ class GenericRowReference( object ):
         """Sets new row data for the Gtk.TreeRow that this instance references."""
         model = self.get_model()
         path = self.get_path()
-        # FIXME: Maybe do some rowdata typechecking in subclasses
+        # TODO: Maybe do some rowdata typechecking in subclasses
         model[path] = rowdata

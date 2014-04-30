@@ -1,0 +1,19 @@
+\documentclass[position]{scrlttr2}
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{marvosym}
+\DeclareUnicodeCharacter{20AC}{\EUR{}}
+\usepackage{graphicx,xcolor,eso-pic,tabularx}
+\usepackage{verbatimbox}
+\begin{document}
+\begin{letter}{((( recipient|escape_tex|escape_nl )))}
+\setkomavar{signature}{((( signature|escape_tex|escape_nl )))}
+\setkomavar{date}{((( date )))}
+\setkomavar{subject}{((( subject|escape_tex|escape_nl )))}
+\opening{((( opening|escape_tex|escape_nl )))}
+
+((( text|escape_tex|escape_nl )))
+
+\closing{ ((( closing|escape_tex|escape_nl ))) }
+\end{letter}
+\end{document}

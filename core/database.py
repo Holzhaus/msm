@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import *
+from sqlalchemy import event, orm, create_engine, func
+from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Date, ForeignKey
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
 Base = declarative_base()
-import datetime, random, string, operator, re
-import core.io
-import core.config
+import datetime, random, string, re
 
 zipcodes = {}
 bankcodes = {}
@@ -35,7 +34,7 @@ class Database( object ):
         Database._engine = create_engine( self._database )
         print( "db:", database )
         metadata = Base.metadata
-        metadata.create_all( self._engine )  # create tables in database
+        metadata.create_all( self._engine ) # create tables in database
         Database.session_factory = sessionmaker( bind=self._engine, autoflush=False )
         Session = Database.get_scoped_session( self._scopefunc )
     @staticmethod
@@ -209,7 +208,7 @@ class Customer( Base ):
         return "%s %s" % ( self.prename, self.familyname )
     def __eq__( self, other ):
         if isinstance( other, self.__class__ ):
-            attr1 = self.__dict__.copy()  # We copy the dicts, since we don't want to alter the original ones
+            attr1 = self.__dict__.copy() # We copy the dicts, since we don't want to alter the original ones
             attr2 = other.__dict__.copy()
             for key in list( attr1.keys() ):
                 if key.startswith( "_" ):
@@ -237,9 +236,6 @@ class Customer( Base ):
             if not isinstance( session, type( Session ) ):
                 raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
         return list( session().query( Customer ).order_by( Customer.id ) )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Customer.id ) ).scalar()
     """@staticmethod
     def add( self, familyname, prename, honourific, title, birthday, gender, company1, company2, department,
                      flush=True ):
@@ -264,7 +260,7 @@ class Customer( Base ):
         self.company1 = company1
         self.company2 = company2
         self.department = department
-        self.id  # this call is necessary
+        self.id # this call is necessary
     def add_address( self, street, zipcode, city="", countrycode="DE", co="" ):
         address = Address( street, zipcode, city, countrycode, co )
         self.addresses.append( address )
@@ -360,9 +356,9 @@ class Magazine( Base ):
         if issue_id:
             query = query.filter_by( id=issue_id )
         if startdate:
-            query = query.filter( Issue.date >= startdate )  # FIXME: use shipment_date instead
+            query = query.filter( Issue.date >= startdate ) # FIXME: use shipment_date instead
         if enddate:
-            query = query.filter( Issue.date <= enddate )  # FIXME: use shipment_date instead
+            query = query.filter( Issue.date <= enddate ) # FIXME: use shipment_date instead
         query = query.order_by( Issue.date )
         query = query[:limit] if limit != None else query.all()
         return query
@@ -441,8 +437,8 @@ class Bankaccount( Base ):
     customer = relationship( Customer, backref=backref( 'bankaccounts', order_by=id, cascade="all, delete, delete-orphan" ) )
     def __init__( self, iban, bic="", bank="", owner="" ):
         self.iban = iban
-        self.bic = bic  # if bic else  Bankaccount.get_bic_by_iban( self.bic )
-        self.bank = bank  # if bank else Bankaccount.get_bank_by_bic( self.bic )
+        self.bic = bic # if bic else  Bankaccount.get_bic_by_iban( self.bic )
+        self.bank = bank # if bank else Bankaccount.get_bank_by_bic( self.bic )
         self.owner = owner
     @staticmethod
     def get_by_id( bankaccount_id, session=None ):
@@ -491,7 +487,7 @@ class Contract( Base ):
     billingaddress = relationship( Address, primaryjoin=( billingaddress_id == Address.id ) )
     @property
     def price_per_issue( self ):
-        bankersround = lambda x, n = 2 : x / abs( x ) * int( abs( x ) * 10 ** n + .5 ) / 10 ** n  # This is a fix for changed python3 rounding behaviour
+        bankersround = lambda x, n = 2 : x / abs( x ) * int( abs( x ) * 10 ** n + .5 ) / 10 ** n # This is a fix for changed python3 rounding behaviour
         return bankersround( float( self.value ) / float( self.subscription.total_number_of_issues ) )
     REFID_SIZE = 6
     REFID_CHECKSUM_SIZE = 2
@@ -637,11 +633,11 @@ class Contract( Base ):
             previous_invoice = None
         if not isinstance( accounting_startdate, datetime.date ):
             if previous_invoice is not None:
-                accounting_startdate = previous_invoice.accounting_enddate + datetime.timedelta( days=1 )  # assume this invoice's accounting period starts just after the previous invoice's accounting period ended
+                accounting_startdate = previous_invoice.accounting_enddate + datetime.timedelta( days=1 ) # assume this invoice's accounting period starts just after the previous invoice's accounting period ended
             else:
-                accounting_startdate = self.startdate  # assume this invoice's accounting period starts on the contract's startdate
+                accounting_startdate = self.startdate # assume this invoice's accounting period starts on the contract's startdate
         else:
-            if previous_invoice is not None and accounting_startdate <= previous_invoice.enddate:  # we don't want that our customers have to pay twice
+            if previous_invoice is not None and accounting_startdate <= previous_invoice.enddate: # we don't want that our customers have to pay twice
                 raise ValueError( "accounting period overlaps with the accounting period of the last invoice" )
             elif accounting_startdate <= self.startdate:
                 raise ValueError( "accounting period starts before the contract" )

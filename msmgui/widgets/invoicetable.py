@@ -7,14 +7,6 @@ import locale
 import msmgui.rowreference
 import core.pdfgenerator
 import sys, os, subprocess
-def show_invoice( filepath ):
-    FNULL = open( os.devnull, "wb" )
-    if sys.platform.startswith( 'darwin' ):
-        subprocess.call( ['open', filepath], stdout=FNULL, stderr=FNULL )
-    elif sys.platform.startswith( 'linux' ):
-        subprocess.call( ['xdg-open', filepath], stdout=FNULL, stderr=FNULL )
-    elif sys.platform.startswith( 'win32' ):
-        os.startfile( os.path.normpath( filepath ) )
 class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
         builder = None
         def __init__( self, model, path ):
@@ -56,8 +48,8 @@ class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
             return invoice
 
 class InvoiceTable( Gtk.Box ):
-    MIN_FILTER_LEN = 3  # what is the minimum length for the filter string
-    FILTER_COLUMNS = ( 1, 2, 11, 12 )  # which columns should be used for filtering
+    MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
+    FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
         'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
@@ -120,7 +112,7 @@ class InvoiceTable( Gtk.Box ):
         self.session.remove()
         model = rowref.get_model()
         treeiter = rowref.get_iter()
-        model.remove( treeiter )  # Remove row from table
+        model.remove( treeiter ) # Remove row from table
     """Getting and setting rows"""
     def _get_rowref_by_invoice_id( self, invoice_id ):
         if not isinstance( invoice_id, int ):
@@ -168,10 +160,10 @@ class InvoiceTable( Gtk.Box ):
         rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
         if rowref == self.selection:
             # if self.selection and self.selection.get_row() is row:
-            return True  # Prevent currently selected row from being hidden
+            return True # Prevent currently selected row from being hidden
         invoice = rowref.get_invoice()
         if self.active_only and not invoice.value_left:
-            return False  # if active_only is True, then invoices without contracts are hidden
+            return False # if active_only is True, then invoices without contracts are hidden
         if len( self.filter ) < InvoiceTable.MIN_FILTER_LEN:
             return True
         else:
@@ -273,11 +265,11 @@ class InvoiceTable( Gtk.Box ):
         model = treeview.get_model()
         rowref = InvoiceRowReference( model, path )
         invoice = rowref.get_invoice()
-        filepath = core.pdfgenerator.LetterGenerator.render_invoice( invoice )
-        show_invoice( filepath )
+        letter = core.pdfgenerator.Letter( [invoice] )
+        letter.preview()
     def invoices_treeview_selection_changed_cb( self, selection ):
         if self.selection_blocked:
-            self.selection = self.selection  # Restore current selection
+            self.selection = self.selection # Restore current selection
             return
         model, treeiter = selection.get_selected()
         if treeiter:
