@@ -10,6 +10,7 @@ import jinja2
 import locale
 import core.database
 import threading
+import datetime
 from PyPDF2 import PdfFileMerger, PdfFileReader
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio
