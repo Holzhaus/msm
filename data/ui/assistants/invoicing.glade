@@ -91,6 +91,7 @@
               <object class="GtkRadioButton" id="contracts_select_radiobutton">
                 <property name="label" translatable="yes">Nur für bestimmte Verträge (Auswahl im nächten Schritt)</property>
                 <property name="visible">True</property>
+                <property name="sensitive">False</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">False</property>
                 <property name="xalign">0</property>
@@ -116,7 +117,6 @@
       <packing>
         <property name="page_type">intro</property>
         <property name="title" translatable="yes">Einführung</property>
-        <property name="complete">True</property>
       </packing>
     </child>
     <child>
@@ -274,7 +274,7 @@
       </packing>
     </child>
     <child>
-      <object class="GtkBox" id="page_confirm1">
+      <object class="GtkBox" id="page_invoicedetails">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
@@ -446,6 +446,9 @@
           </packing>
         </child>
       </object>
+      <packing>
+        <property name="title" translatable="yes">Rechnungsdetails angeben</property>
+      </packing>
     </child>
     <child>
       <object class="GtkBox" id="page_confirm">
@@ -508,6 +511,11 @@
           </packing>
         </child>
       </object>
+      <packing>
+        <property name="page_type">summary</property>
+        <property name="title" translatable="yes">Rechnungen fertig!</property>
+        <property name="complete">True</property>
+      </packing>
     </child>
     <child internal-child="action_area">
       <object class="GtkBox" id="assistant-action_area">

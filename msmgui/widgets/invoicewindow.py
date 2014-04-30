@@ -5,6 +5,7 @@ from core.config import Configuration
 import msmgui.widgets.invoicetable
 import datetime
 import core.database
+import msmgui.assistants.invoicing
 class InvoiceWindow( Gtk.Box ):
     __gsignals__ = {
         'status-changed': ( GObject.SIGNAL_RUN_FIRST, None, ( str, ) )
@@ -33,6 +34,9 @@ class InvoiceWindow( Gtk.Box ):
     def invoices_showall_switch_notify_active_cb( self, switch, param_spec ):
         self._invoicetable.active_only = not switch.get_active()
     def invoices_create_button_clicked_cb( self, button ):
+        assistant = msmgui.assistants.invoicing.InvoicingAssistant( self.get_toplevel() )
+        assistant.show()
+        return
         print( "AAAAAAA" )
         invoices = []
         date = datetime.date.today()
@@ -58,7 +62,7 @@ class InvoiceWindow( Gtk.Box ):
             self.emit( "status-changed", "Keine Rechnungen erstellt." )
     def invoices_export_button_clicked_cb( self, button ):
         pdfs = []
-        invoices = []  #FIXME
+        invoices = [] # FIXME
         for invoice in invoices:
             pdfs.append( core.pdfgenerator.LetterGenerator.render_invoice( invoice ) )
         self.add_status_message( ( "Eine Rechnung als PDF generiert." if len( pdfs ) == 1 else "%d Rechnungen als PDF generiert." % len( pdfs ) ) )

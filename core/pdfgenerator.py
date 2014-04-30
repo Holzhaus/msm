@@ -13,7 +13,7 @@ import threading
 import datetime
 from PyPDF2 import PdfFileMerger, PdfFileReader
 if sys.platform.startswith( 'linux' ):
-    from gi.repository import Gio
+    from gi.repository import Gio # We need this as xdg-open replacement (see below)
 LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
               ( re.compile( r'([{}_#%&$])' ), r'\\\1' ),
               ( re.compile( r'~' ), r'\~{}' ),
