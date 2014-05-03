@@ -168,7 +168,7 @@ class CellRendererDate( Gtk.CellRendererText ):
             self._create_calendar( treeview )
 
         # select cell's previously stored date if any exists - or today
-        if self.get_property( 'text' ):
+        if self.get_property( 'text' ):02.05.2014
             date = datetime.datetime.strptime( self.get_property( 'text' ), self.date_format )
         else:
             date = datetime.datetime.today()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import event, orm, create_engine, func
+from sqlalchemy import event, orm, create_engine, func, sql
 from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Date, ForeignKey
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
 Base = declarative_base()
@@ -38,10 +38,14 @@ class Database( object ):
         Database.session_factory = sessionmaker( bind=self._engine, autoflush=False )
         Session = Database.get_scoped_session( self._scopefunc )
     @staticmethod
-    def get_scoped_session( scope_function ):
+    def get_scoped_session( scope_function=None ):
         if Database.session_factory is None:
             raise RuntimeError( "Database has to be initialized first." )
-        return scoped_session( Database.session_factory, scopefunc=scope_function )
+        if scope_function:
+            scoped_session_obj = scoped_session( Database.session_factory, scopefunc=scope_function )
+        else:
+            scoped_session_obj = scoped_session( Database.session_factory )
+        return scoped_session_obj
     @staticmethod
     def get_engine_info():
         name = Database._database
@@ -351,9 +355,16 @@ class Magazine( Base ):
         if not self.name or not self.issues_per_year:
             return False
         return True
-    def getIssues( self, issue_id=None, startdate=None, enddate=None, limit=None ):
-        query = Session().query( Issue ).filter_by( magazine_id=self.id )
-        if issue_id:
+    def get_issues( self, issue_id=None, startdate=None, enddate=None, limit=None ):
+        result = []
+        for issue in self.issues:
+            if issue_id is not None and issue.id != issue_id: continue
+            if startdate is not None and issue.date < startdate: continue
+            if enddate is not None and issue.date > enddate: continue
+            result.append( issue )
+        result = result[:limit] if limit is not None else result
+        return result
+        """if issue_id:
             query = query.filter_by( id=issue_id )
         if startdate:
             query = query.filter( Issue.date >= startdate ) # FIXME: use shipment_date instead
@@ -361,7 +372,7 @@ class Magazine( Base ):
             query = query.filter( Issue.date <= enddate ) # FIXME: use shipment_date instead
         query = query.order_by( Issue.date )
         query = query[:limit] if limit != None else query.all()
-        return query
+        return query"""
     @staticmethod
     def get_all( session=None ):
         if session is None:
@@ -600,11 +611,12 @@ class Contract( Base ):
         if self.subscription.number_of_issues:
             limit = self.subscription.number_of_issues
             if startdate > self.startdate:
-                issues_received_before = len( self.getIssuesReceived( enddate=( startdate - datetime.timedelta( days=1 ) ) ) )
+                issues_received_before = len( self.get_issues_received( enddate=( startdate - datetime.timedelta( days=1 ) ) ) )
                 limit -= issues_received_before
         else:
             limit = None
-        issues = self.subscription.magazine.getIssues( startdate=startdate, enddate=enddate, limit=limit )
+        issues = self.subscription.magazine.get_issues( startdate=startdate, enddate=enddate, limit=limit )
+        print( startdate, enddate, issues )
         return issues
     @property
     def invoices_open( self ):
@@ -646,8 +658,14 @@ class Contract( Base ):
         # Now we can continue as everything should be fine now
         invoice = Invoice( date=date, due_date=due_date, accounting_startdate=accounting_startdate, accounting_enddate=accounting_enddate )
         self.invoices.append( invoice )
-        invoice.assign_number()
         invoice.add_automatic_entries()
+        if invoice.value == 0:
+            self.invoices.remove( invoice )
+            session = sqlalchemy.inspect( invoice ).session
+            if session:
+                session.expunge( invoice )
+            raise ValueError( "value is zero." )
+        invoice.assign_number()
         return invoice
     def _generateContractRefNumber( self ):
         q = Session.query( func.count( Contract.id ) ).filter( Contract.customer_id == self.customer_id, Contract.id <= self.id ).order_by( Contract.id )
@@ -691,8 +709,8 @@ class Invoice( Base ):
     date = Column( Date, nullable=False )
     due_date = Column( Date, nullable=False )
     number = Column( Integer )
-    contract = relationship( Contract, backref=backref( 'invoices', order_by=date ) )
-    entries = relationship( BookkeepingEntry, secondary=association_table, backref="invoices" )
+    contract = relationship( Contract, backref=backref( 'invoices', order_by=date, cascade="all, delete" ) )
+    entries = relationship( BookkeepingEntry, secondary=association_table, backref="invoices", cascade="all, delete" )
     @property
     def value( self ):
         value = 0
@@ -729,7 +747,11 @@ class Invoice( Base ):
             return self.number
         if not self.contract:
             return AttributeError( "contract not yet assigned" )
-        number = max( invoice.number for invoice in self.contract.invoices )
+        previous_invoicenumbers = [ invoice.number for invoice in self.contract.invoices if invoice.number is not None ]
+        try:
+            number = max( previous_invoicenumbers )
+        except ValueError:
+            number = None
         if not number:
             number = 0
         number += 1

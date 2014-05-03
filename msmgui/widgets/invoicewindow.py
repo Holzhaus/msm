@@ -22,6 +22,9 @@ class InvoiceWindow( Gtk.Box ):
         self._invoicetable.connect( "selection-changed", self.invoicetable_selection_changed_cb )
         self._invoicetable.fill()
 
+        self._assistant = msmgui.assistants.invoicing.InvoicingAssistant()
+        self._assistant.connect( "saved", self.assistant_saved_cb )
+
         active_only = Configuration().getboolean( "Interface", "active_only" )
         if not active_only:
             self.builder.get_object( "invoices_showall_switch" ).set_active( not active_only )
@@ -34,32 +37,8 @@ class InvoiceWindow( Gtk.Box ):
     def invoices_showall_switch_notify_active_cb( self, switch, param_spec ):
         self._invoicetable.active_only = not switch.get_active()
     def invoices_create_button_clicked_cb( self, button ):
-        assistant = msmgui.assistants.invoicing.InvoicingAssistant( self.get_toplevel() )
-        assistant.show()
-        return
-        print( "AAAAAAA" )
-        invoices = []
-        date = datetime.date.today()
-        maturity = datetime.timedelta( days=14 )
-        def scopefunc():
-            return "export_invoices"
-        session = core.database.Database.get_scoped_session( scopefunc )
-        for contract in core.database.Contract.get_all( session=session ):
-            print( "c", contract )
-            try:
-                invoice = contract.add_invoice( date=date, maturity=maturity )
-            except ( ValueError, TypeError ):
-                invoice = None
-            if invoice is not None:
-                invoices.append( invoice )
-
-        print( invoices )
-        if invoices:
-            session().commit()
-            self._invoicewindow.refresh()
-            self.emit( "status-changed", ( "Eine Rechnung erstellt." if len( invoices ) == 1 else "%d Rechnungen erstellt." % len( invoices ) ) )
-        else:
-            self.emit( "status-changed", "Keine Rechnungen erstellt." )
+        self._assistant.set_parent( self.get_toplevel() )
+        self._assistant.show()
     def invoices_export_button_clicked_cb( self, button ):
         pdfs = []
         invoices = [] # FIXME
@@ -75,3 +54,9 @@ class InvoiceWindow( Gtk.Box ):
         window.connect( "draw", edraw )
         window.set_app_paintable( True )
         window.show_all()"""
+    def assistant_saved_cb( self, assistant, num_invoices ):
+        if num_invoices > 0:
+            self.emit( "status-changed", ( "Eine Rechnung erstellt." if num_invoices == 1 else "%d Rechnungen erstellt." % num_invoices ) )
+            self.refresh()
+        else:
+            self.emit( "status-changed", "Keine Rechnungen erstellt." )

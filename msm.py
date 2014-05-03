@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GObject
 import msmgui.main
 import core.database
 import msmgui.dialogs.preferences
@@ -71,5 +71,6 @@ class MagazineSubscriptionManager( Gtk.Application ):
             Gtk.main_quit()
             sys.exit()
 if __name__ == "__main__":
+    GObject.threads_init()
     app = MagazineSubscriptionManager()
     app.run( None )
