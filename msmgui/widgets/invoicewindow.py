@@ -6,6 +6,7 @@ import msmgui.widgets.invoicetable
 import datetime
 import core.database
 import msmgui.assistants.invoicing
+import msmgui.assistants.letterexport
 class InvoiceWindow( Gtk.Box ):
     __gsignals__ = {
         'status-changed': ( GObject.SIGNAL_RUN_FIRST, None, ( str, ) )
@@ -22,8 +23,10 @@ class InvoiceWindow( Gtk.Box ):
         self._invoicetable.connect( "selection-changed", self.invoicetable_selection_changed_cb )
         self._invoicetable.fill()
 
-        self._assistant = msmgui.assistants.invoicing.InvoicingAssistant()
-        self._assistant.connect( "saved", self.assistant_saved_cb )
+        self._invoicingassistant = msmgui.assistants.invoicing.InvoicingAssistant()
+        self._invoicingassistant.connect( "saved", self.invoicingassistant_saved_cb )
+
+        self._letterexportassistant = msmgui.assistants.letterexport.LetterExportAssistant()
 
         active_only = Configuration().getboolean( "Interface", "active_only" )
         if not active_only:
@@ -37,14 +40,17 @@ class InvoiceWindow( Gtk.Box ):
     def invoices_showall_switch_notify_active_cb( self, switch, param_spec ):
         self._invoicetable.active_only = not switch.get_active()
     def invoices_create_button_clicked_cb( self, button ):
-        self._assistant.set_parent( self.get_toplevel() )
-        self._assistant.show()
+        self._invoicingassistant.set_parent( self.get_toplevel() )
+        self._invoicingassistant.show()
     def invoices_export_button_clicked_cb( self, button ):
-        pdfs = []
+        self._letterexportassistant.set_parent( self.get_toplevel() )
+        self._letterexportassistant.show()
+
+        """pdfs = []
         invoices = [] # FIXME
         for invoice in invoices:
             pdfs.append( core.pdfgenerator.LetterGenerator.render_invoice( invoice ) )
-        self.add_status_message( ( "Eine Rechnung als PDF generiert." if len( pdfs ) == 1 else "%d Rechnungen als PDF generiert." % len( pdfs ) ) )
+        self.add_status_message( ( "Eine Rechnung als PDF generiert." if len( pdfs ) == 1 else "%d Rechnungen als PDF generiert." % len( pdfs ) ) )"""
         """document = Poppler.Document.new_from_file( "file://" + filename, None )
         def edraw( widget, surface ):
             page.render( surface )
@@ -54,7 +60,7 @@ class InvoiceWindow( Gtk.Box ):
         window.connect( "draw", edraw )
         window.set_app_paintable( True )
         window.show_all()"""
-    def assistant_saved_cb( self, assistant, num_invoices ):
+    def invoicingassistant_saved_cb( self, assistant, num_invoices ):
         if num_invoices > 0:
             self.emit( "status-changed", ( "Eine Rechnung erstellt." if num_invoices == 1 else "%d Rechnungen erstellt." % num_invoices ) )
             self.refresh()

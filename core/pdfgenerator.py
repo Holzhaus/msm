@@ -62,25 +62,24 @@ class PdfGenerator():
                    '-jobname', jobname,
                    '-output-directory', tmpdirname,
                    latexfile]
-            print( tmpdirname )
             latex = subprocess.call( cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
             if latex != 0:
                 raise Exception
             tmp_uri = os.path.join( tmpdirname, '%s.pdf' % jobname )
             shutil.copy( tmp_uri, output_file )
-class Note:
-    def __init__( self, customer, address, subject, text, date=datetime.date.today() ):
-        self.customer = customer
-        self.address = address
-        self.subject = subject
-        self.date = date
 class Letter:
-    def __init__( self, contents=None ):
+    def __init__( self, contract, date=datetime.date.today(), contents=None ):
+        self.contract = contract
+        self.date = date
         if not contents:
             contents = []
         else:
             contents = contents.copy()
         self.contents = contents
+    def add_content( self, content ):
+        self.contents.append( content )
+    def has_contents( self ):
+        return True if len( self.contents ) else False
     def save( self, output_filename ):
         f = open( output_filename, "wb" )
         self.render( f )
@@ -137,27 +136,32 @@ class LetterRenderer:
                 tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "pdf", dir=tmp_dir, delete=False )
                 tmp_filename = tmp_file.name
                 tmp_file.close()
-                LetterRenderer._render_part( obj, tmp_filename )
+                LetterRenderer._render_part( letter, obj, tmp_filename )
                 merger.append( PdfFileReader( open( tmp_filename, 'rb' ) ) )
                 os.remove( tmp_filename )
             merger.write( handle )
     @staticmethod
-    def _render_part( obj, output_file ):
-        if isinstance( obj, core.database.Invoice ):
-            return LetterRenderer._render_invoice( obj, output_file )
-    @staticmethod
-    def _render_invoice( invoice, output_file ):
-        invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
-        templatevars = {'recipient': "%s\n%s\n%s %s" % ( invoice.contract.customer.name, invoice.contract.billingaddress.street, invoice.contract.billingaddress.zipcode, invoice.contract.billingaddress.city ),
+    def _render_part( letter, obj, output_file ):
+        templatevars = {'closing':'Mit freundlichen Grüßen,',
                         'signature':'POSITION\nAbo-Service',
-                        'opening':'Sehr geehrter Herr %s,' % invoice.contract.customer.familyname,
-                        'closing':'Mit freundlichen Grüßen,',
-                        'date':invoice.date.strftime( '%d.~%m~%Y' ),
-                        'invoice_no': invoice_no,
-                        'subject':'Rechnung Nr. %s' % invoice_no,
-                        'subscription_name':invoice.contract.subscription.name,
-                        'magazine_name':invoice.contract.subscription.magazine.name,
-                        'total':locale.currency( invoice.value_left )}
+                        'recipient': "%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
+                        'opening':'Sehr geehrter Herr %s,' % letter.contract.customer.familyname,
+                        'date':letter.date.strftime( '%d.~%m~%Y' ),
+                        'customer': letter.contract.customer,
+                        'contract': letter.contract}
+        if isinstance( obj, core.database.Invoice ):
+            return LetterRenderer._render_invoice( templatevars, obj, output_file )
+        elif isinstance( obj, core.database.Note ):
+            return LetterRenderer._render_note( templatevars, obj, output_file )
+    @staticmethod
+    def _render_invoice( generic_templatevars, invoice, output_file ):
+        invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
+        templatevars = generic_templatevars.copy()
+        templatevars.update( {'invoice_no': invoice_no,
+                             'subject':'Rechnung Nr. %s' % invoice_no,
+                             'subscription_name':invoice.contract.subscription.name,
+                             'magazine_name':invoice.contract.subscription.magazine.name,
+                             'total':locale.currency( invoice.value_left )} )
         entries = []
         for i, entry in enumerate( invoice.entries ):
             entries.append( {'position':str( i + 1 ),
@@ -169,14 +173,11 @@ class LetterRenderer:
         PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
         return output_file
     @staticmethod
-    def _render_note( none, output_file ):
-        templatevars = {'recipient': "%s\n%s\n%s %s" % ( note.customer.name, note.address.street, note.address.zipcode, note.address.city ),
-                        'signature':'POSITION\nAbo-Service',
-                        'opening':'Sehr geehrter Herr %s,' % note.customer.familyname,
-                        'closing':'Mit freundlichen Grüßen,',
-                        'date':note.date.strftime( '%d.~%m~%Y' ),
-                        'subject': note.subject,
-                        'text':note.text}
+    def _render_note( generic_templatevars, note, output_file ):
+        templatevars = generic_templatevars.copy()
+        text = template_env.from_string( note.text ).render( templatevars )
+        templatevars.update( {'subject': note.subject,
+                              'text':text} )
         template = template_env.get_template( "{}.template".format( "note" ) )
         rendered_document = template.render( templatevars )
         PdfGenerator.latexstr_to_pdf( rendered_document, output_file )

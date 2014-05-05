@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import event, orm, create_engine, func, sql
-from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Date, ForeignKey
+from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Text, Date, ForeignKey
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
 Base = declarative_base()
 import datetime, random, string, re
@@ -766,8 +766,28 @@ class Invoice( Base ):
         return list( session().query( Invoice ).order_by( Invoice.id ) )
     @staticmethod
     def count():
-        return Session().query( func.count( BookkeepingEntry.id ) ).scalar()
+        return Session().query( func.count( Invoice.id ) ).scalar()
     def is_valid( self ):
         if not self.contract or not self.date or not self.entries:
             return False
         return True
+
+class Note( Base ):
+    __tablename__ = 'notes'
+    id = Column( Integer, primary_key=True )
+    subject = Column( String( 50 ) )
+    text = Column( Text )
+    def __init__( self, subject, text ):
+        self.subject = subject
+        self.text = text
+    @staticmethod
+    def get_all( session=None ):
+        if session is None:
+            session = Session
+        else:
+            if not isinstance( session, type( Session ) ):
+                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
+        return list( session().query( Note ).order_by( Note.subject ) )
+    @staticmethod
+    def count():
+        return Session().query( func.count( Note.id ) ).scalar()

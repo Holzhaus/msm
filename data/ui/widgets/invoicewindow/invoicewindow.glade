@@ -51,7 +51,6 @@
                   <object class="GtkButton" id="invoices_export_button">
                     <property name="label">Exportieren</property>
                     <property name="visible">True</property>
-                    <property name="sensitive">False</property>
                     <property name="can_focus">False</property>
                     <property name="receives_default">True</property>
                     <property name="image">image2</property>
