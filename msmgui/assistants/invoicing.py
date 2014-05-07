@@ -95,7 +95,7 @@ class InvoicingAssistant( GObject.GObject ):
                 spinner.start()
             def _gui_update( self, contract_current, contract_total ):
                 spinner, label, assistant, page, invoicetable = self.gui_objects
-                label.set_text( "Generiere Rechnungen... (Vetrag {}/{})".format( contract_current, contract_total ) )
+                label.set_text( "Generiere Rechnungen... (Vertrag {}/{})".format( contract_current, contract_total ) )
             def _gui_stop( self, num_invoices, num_contracts ):
                 merged_contracts = []
                 for unmerged_contract in self.contracts:
