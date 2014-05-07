@@ -506,8 +506,12 @@ class Contract( Base ):
     billingaddress = relationship( Address, primaryjoin=( billingaddress_id == Address.id ) )
     @property
     def price_per_issue( self ):
-        bankersround = lambda x, n = 2 : x / abs( x ) * int( abs( x ) * 10 ** n + .5 ) / 10 ** n # This is a fix for changed python3 rounding behaviour
-        return bankersround( float( self.value ) / float( self.subscription.total_number_of_issues ) )
+        import decimal
+        ctx = decimal.Context( prec=2, rounding=decimal.ROUND_HALF_EVEN )
+        val = ctx.create_decimal( self.value )
+        num = ctx.create_decimal( self.subscription.total_number_of_issues )
+        result = val / num
+        return float( result )
     REFID_SIZE = 6
     REFID_CHECKSUM_SIZE = 2
     REFID_CHARS = string.ascii_uppercase.replace( "O", "" ).replace( "I", "" ) + string.digits.replace( "0", "" )
