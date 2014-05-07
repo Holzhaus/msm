@@ -273,8 +273,8 @@ class Customer( Base ):
         bankaccount = Bankaccount( iban, bic, bank, owner )
         self.bankaccounts.append( bankaccount )
         return bankaccount
-    def add_contract( self, subscription_id=None, startdate=None, enddate=None, value=None, paymenttype=PaymentType.Invoice, shippingaddress_id=None, billingaddress_id=None, bankaccount_id=None ):
-        contract = Contract( subscription_id, startdate, enddate, value, paymenttype, shippingaddress_id, billingaddress_id, bankaccount_id )
+    def add_contract( self, subscription=None, startdate=None, enddate=None, value=None, paymenttype=PaymentType.Invoice, shippingaddress=None, billingaddress=None, bankaccount=None ):
+        contract = Contract( subscription, startdate, enddate, value, paymenttype, shippingaddress, billingaddress, bankaccount )
         self.contracts.append( contract )
         return contract
     def is_valid( self ):
@@ -402,6 +402,10 @@ class Subscription( Base ):
         self.value = value
         self.value_changeable = value_changeable
         self.number_of_issues = number_of_issues
+    def is_valid( self ):
+        if not self.magazine or not self.name or not self.value:
+            return False
+        return True
     @staticmethod
     def get_by_id( subscription_id, session=None ):
         if session is None:
@@ -412,12 +416,16 @@ class Subscription( Base ):
         q = session().query( Subscription ).filter_by( id=subscription_id )
         return q.first() if q else None
     @staticmethod
+    def get_all( session=None ):
+        if session is None:
+            session = Session
+        else:
+            if not isinstance( session, type( Session ) ):
+                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
+        return list( session().query( Subscription ).order_by( Subscription.id ) )
+    @staticmethod
     def count():
         return Session().query( func.count( Subscription.id ) ).scalar()
-    def is_valid( self ):
-        if not self.magazine or not self.name or not self.value:
-            return False
-        return True
 class Issue( Base ):
     __tablename__ = 'issues'
     id = Column( Integer, primary_key=True )
@@ -503,15 +511,15 @@ class Contract( Base ):
     REFID_SIZE = 6
     REFID_CHECKSUM_SIZE = 2
     REFID_CHARS = string.ascii_uppercase.replace( "O", "" ).replace( "I", "" ) + string.digits.replace( "0", "" )
-    def __init__( self, subscription_id, startdate=None, enddate=None, value=None, paymenttype=PaymentType.Invoice, shippingaddress_id=None, billingaddress_id=None, bankaccount_id=None ):
-        self.subscription_id = subscription_id
+    def __init__( self, subscription, startdate=None, enddate=None, value=None, paymenttype=PaymentType.Invoice, shippingaddress=None, billingaddress=None, bankaccount=None ):
+        self.subscription = subscription
         self.startdate = startdate if startdate else datetime.date.today()
         self.enddate = enddate
         self.value = value if value else 0
         self.paymenttype = paymenttype
-        self.shippingaddress_id = shippingaddress_id
-        self.billingaddress_id = billingaddress_id
-        self.bankaccount_id = bankaccount_id
+        self.shippingaddress = shippingaddress
+        self.billingaddress = billingaddress
+        self.bankaccount = bankaccount
         self.refid = Contract.generate_refid()
     @staticmethod
     def get_by_id( contract_id, session=None ):

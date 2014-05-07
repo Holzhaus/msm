@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf
+from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf, GLib
 from core.config import Configuration
 import msmgui.widgets.customereditor
 import msmgui.widgets.customertable
@@ -35,9 +35,9 @@ class CustomerWindow( Gtk.Box ):
     def customereditor_saved_cb( self, editor, customer_id, is_new ):
         if is_new:
             row = self._customertable.add_customer_by_id( customer_id )
-            self.builder.get_object( "customers_add_togglebutton" ).set_active( False )  # Needs to be called explicitly to avoid double call caused by the toggle signal
+            self.builder.get_object( "customers_add_togglebutton" ).set_active( False ) # Needs to be called explicitly to avoid double call caused by the toggle signal
             self._customertable.selection = row
-            self.builder.get_object( "customers_edit_togglebutton" ).set_active( True )  # Needs to be called explicitly to avoid double call caused by the toggle signal
+            self.builder.get_object( "customers_edit_togglebutton" ).set_active( True ) # Needs to be called explicitly to avoid double call caused by the toggle signal
         else:
             self._customertable.update_customer_by_id( customer_id )
         self.emit( "status-changed", "Kundendaten gespeichert." )

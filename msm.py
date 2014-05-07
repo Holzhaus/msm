@@ -5,6 +5,7 @@ from gi.repository import Gtk, Gio, GObject
 import msmgui.main
 import core.database
 import msmgui.dialogs.preferences
+
 class MagazineSubscriptionManager( Gtk.Application ):
     def __init__( self ):
         Gtk.Application.__init__( self, application_id="apps.holzhaus.magazinesubscriptionmanager",
@@ -16,19 +17,9 @@ class MagazineSubscriptionManager( Gtk.Application ):
         if len( app.get_windows() ):
             app.get_windows()[0].present()
     def on_startup( self, data=None ):
-        """window = Gtk.Window( type=Gtk.WindowType.TOPLEVEL )
-        window.set_title( "Gtk3 Python Example" )
-        window.set_border_width( 24 )
-        label = Gtk.Label( "Hello World!" )
-        window.add( label )"""
         self.config = core.config.Configuration()
         self.database = core.database.Database( self.config.get( "Database", "db_uri" ) )
 
-        """magazine = self.database.addMagazine( "POSITION - Magazin der SDAJ", 6 )
-        magazine.addSubscription( "Normalabo", 10.0, True )
-        magazine.addSubscription( "Soliabo", 20.0, False )
-        magazine.addSubscription( "Probeabo", 4.0, True, 3 )
-        self.database.save()"""
         # a builder to add the UI designed with Glade to the grid:
         builder = Gtk.Builder()
         # get the file (if it is there)
@@ -41,11 +32,8 @@ class MagazineSubscriptionManager( Gtk.Application ):
         # to the application (Note: NOT the window!)
         self.set_menubar( builder.get_object( "menubar" ) )
         self.set_app_menu( builder.get_object( "appmenu" ) )
-
         self._mainwindow = msmgui.main.MainWindow( self, self.database )
         self._preferencesdialog = msmgui.dialogs.preferences.PreferencesDialog( self._mainwindow )
-
-        self._mainwindow.show_all()
         self.add_window( self._mainwindow )
 
         """AppMenu Actions"""
@@ -60,6 +48,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
         quit_action = Gio.SimpleAction.new( "quit", None )
         quit_action.connect( "activate", self.quit_cb )
         self.add_action( quit_action )
+        self._mainwindow.show_all()
 
     """Callbacks for AppMenu Actions"""
     def settings_cb( self, action, parameter ):
