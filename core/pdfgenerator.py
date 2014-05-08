@@ -11,7 +11,6 @@ import locale
 import core.database
 import threading
 import datetime
-from PyPDF2 import PdfFileMerger, PdfFileReader
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
@@ -21,7 +20,7 @@ LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
               ( re.compile( r'"' ), r"''" ),
               ( re.compile( r'\.\.\.+' ), r'\\ldots' ),
               ( re.compile( r'€' ), r'\\euro\{\}' ) )
-NEWLINE_SUB = ( re.compile( r'\n' ), r'\\\\' )
+NEWLINE_SUB = ( re.compile( r'\n' ), r'{\\newline}' )
 def escape_tex( value ):
     newval = value
     for pattern, replacement in LATEX_SUBS:
@@ -41,6 +40,8 @@ template_env.comment_end_string = '=))'
 template_env.filters['escape_tex'] = escape_tex
 template_env.filters['escape_nl'] = escape_nl
 class PdfGenerator():
+    class LatexError( Exception ):
+        pass
     @staticmethod
     def latexstr_to_pdf( latexstr, output_file='/tmp/output.pdf' ):
         f = tempfile.NamedTemporaryFile( delete=False )
@@ -62,9 +63,9 @@ class PdfGenerator():
                    '-jobname', jobname,
                    '-output-directory', tmpdirname,
                    latexfile]
-            latex = subprocess.call( cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+            latex = subprocess.call( cmd, env=env ) # , stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
             if latex != 0:
-                raise Exception
+                raise PdfGenerator.LatexError()
             tmp_uri = os.path.join( tmpdirname, '%s.pdf' % jobname )
             shutil.copy( tmp_uri, output_file )
 class Letter:
@@ -83,8 +84,8 @@ class Letter:
     def save( self, output_filename ):
         f = open( output_filename, "wb" )
         self.render( f )
-    def render( self, handle ):
-        LetterRenderer.render( self, handle )
+    def render( self, output_file ):
+        LetterRenderer.render( self, output_file )
     def preview( self ):
         LetterRenderer.preview( self )
 class LetterRenderer:
@@ -95,9 +96,9 @@ class LetterRenderer:
         preview on exit when the subprocess completes.
         """
         tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "pdf", delete=False )
-        letter.render( tmp_file )
         filepath = tmp_file.name
         tmp_file.close()
+        letter.render( filepath )
         thread = threading.Thread( target=LetterRenderer.show_viewer, args=( filepath, ), kwargs={'delete_file_after': True} )
         thread.start()
         # returns immediately after the thread starts
@@ -129,30 +130,45 @@ class LetterRenderer:
         if delete_file_after:
             os.remove( filepath )
     @staticmethod
-    def render( letter, handle ):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            merger = PdfFileMerger()
-            for obj in letter.contents:
-                tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "pdf", dir=tmp_dir, delete=False )
-                tmp_filename = tmp_file.name
-                tmp_file.close()
-                LetterRenderer._render_part( letter, obj, tmp_filename )
-                merger.append( PdfFileReader( open( tmp_filename, 'rb' ) ) )
-                os.remove( tmp_filename )
-            merger.write( handle )
+    def render( letters, output_file ):
+            # with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_dir = tempfile.mkdtemp( suffix='', prefix='tmplatex' )
+            tmp_files = []
+            if type( letters ) == Letter:
+                letter_list = [letters]
+            else:
+                letter_list = letters
+            for letter in letter_list:
+                for obj in letter.contents:
+                    tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "tex", dir=tmp_dir, delete=False )
+                    tmp_filename = tmp_file.name
+                    tmp_file.close()
+                    LetterRenderer._render_part( letter, obj, tmp_filename )
+                    tmp_files.append( tmp_filename )
+            template = template_env.get_template( "{}.template".format( "base" ) )
+            rendered_document = template.render( {'filenames':tmp_files} )
+            # try:
+            PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
+            """except PdfGenerator.LatexError:
+                return None
+            else:
+                return output_file"""
     @staticmethod
     def _render_part( letter, obj, output_file ):
-        templatevars = {'closing':'Mit freundlichen Grüßen,',
+        templatevars = {'closing':'Mit freundlichen Grüßen',
                         'signature':'POSITION\nAbo-Service',
-                        'recipient': "%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
-                        'opening':'Sehr geehrter Herr %s,' % letter.contract.customer.familyname,
+                        'recipient':"%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
+                        'opening':letter.contract.customer.letter_salutation,
                         'date':letter.date.strftime( '%d.~%m~%Y' ),
                         'customer': letter.contract.customer,
                         'contract': letter.contract}
         if isinstance( obj, core.database.Invoice ):
-            return LetterRenderer._render_invoice( templatevars, obj, output_file )
+            rendered_text = LetterRenderer._render_invoice( templatevars, obj, output_file )
         elif isinstance( obj, core.database.Note ):
-            return LetterRenderer._render_note( templatevars, obj, output_file )
+            rendered_text = LetterRenderer._render_note( templatevars, obj, output_file )
+        f = open( output_file, "w", encoding="utf-8" )
+        f.write( rendered_text )
+        f.close()
     @staticmethod
     def _render_invoice( generic_templatevars, invoice, output_file ):
         invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
@@ -169,9 +185,7 @@ class LetterRenderer:
                             'description':entry.description} )
         templatevars['entries'] = entries
         template = template_env.get_template( "{}.template".format( "invoice" ) )
-        rendered_document = template.render( templatevars )
-        PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
-        return output_file
+        return template.render( templatevars )
     @staticmethod
     def _render_note( generic_templatevars, note, output_file ):
         templatevars = generic_templatevars.copy()
@@ -179,6 +193,4 @@ class LetterRenderer:
         templatevars.update( {'subject': note.subject,
                               'text':text} )
         template = template_env.get_template( "{}.template".format( "note" ) )
-        rendered_document = template.render( templatevars )
-        PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
-        return output_file
+        return template.render( templatevars )

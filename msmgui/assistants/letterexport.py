@@ -68,46 +68,43 @@ class LetterExportAssistant( GObject.GObject ):
                 self.lettercomposition = lettercomposition
                 self.gui_objects = gui_objects
                 self.letters = []
+            def contract_to_letter( self, contract ):
+                letter = core.pdfgenerator.Letter( contract, date=datetime.date.today() )
+                for letterpart, criterion in self.lettercomposition:
+                    if type( letterpart ) is LetterCompositor.InvoicePlaceholder:
+                        for invoice in contract.invoices:
+                            letter.add_content( invoice )
+                    elif isinstance( letterpart, core.database.Note ):
+                        if criterion is None or criterion == LetterCompositor.Criterion.Always or \
+                        ( criterion == LetterCompositor.Criterion.OnlyOnInvoice and contract.paymenttype == core.database.PaymentType.Invoice ) or \
+                        ( criterion == LetterCompositor.Criterion.OnlyOnDirectWithdrawal and contract.paymenttype == core.database.PaymentType.DirectWithdrawal ):
+                            letter.add_content( letterpart )
+                    else:
+                        raise RuntimeError( "unknown type: %s", letterpart )
+                return letter
             def run( self ):
                 GLib.idle_add( lambda: self._gui_start() )
-                local_session = core.database.Database.get_scoped_session()
-                i = 0
-                merger = PdfFileMerger()
                 num_contracts = len( self.contracts )
+                local_session = core.database.Database.get_scoped_session()
+                letters = []
                 num_letters = 0
-                for unmerged_contract in self.contracts:
-                    i += 1
+                for i, unmerged_contract in enumerate( self.contracts ):
                     contract = local_session.merge( unmerged_contract ) # add them to the local session
-                    letter = core.pdfgenerator.Letter( contract, date=datetime.date.today() )
-                    for letterpart, criterion in self.lettercomposition:
-                        if type( letterpart ) is LetterCompositor.InvoicePlaceholder:
-                            for invoice in contract.invoices:
-                                letter.add_content( invoice )
-                        elif isinstance( letterpart, core.database.Note ):
-                            if criterion is None or criterion == LetterCompositor.Criterion.Always or \
-                            ( criterion == LetterCompositor.Criterion.OnlyOnInvoice and contract.paymenttype == core.database.PaymentType.Invoice ) or \
-                            ( criterion == LetterCompositor.Criterion.OnlyOnDirectWithdrawal and contract.paymenttype == core.database.PaymentType.DirectWithdrawal ):
-                                letter.add_content( letterpart )
-                        else:
-                           raise RuntimeError( "unknown type: %s", letterpart )
+                    letter = self.contract_to_letter( contract )
                     if letter.has_contents():
-                        with tempfile.NamedTemporaryFile( suffix=os.extsep + "pdf" ) as tmp_file:
-                            letter.render( tmp_file )
-                            merger.append( PdfFileReader( tmp_file ) )
-                            num_letters += 1
-                    text = "Rendere Briefe... (Vertrag {}/{})".format( i, num_contracts )
-                    GLib.idle_add( lambda: self._gui_update( text ) )
-                filename = "/tmp/export.pdf"
-                GLib.idle_add( lambda: self._gui_update( "Schreibe PDF in {} ...".format( filename ) ) )
-                f = open( filename, "wb" )
-                merger.write( f )
-                f.close()
+                        letters.append( letter )
+                        num_letters += 1
+                        text = "Stelle zusammen ({})".format( num_letters )
+                        GLib.idle_add( self._gui_update, text )
+                filename = "/tmp/exporttest.pdf"
+                GLib.idle_add( self._gui_update, "Rendere Briefe..." )
+                core.pdfgenerator.LetterRenderer.render( letters, filename )
                 local_session.expunge_all() # expunge everything afterwards
                 local_session.remove()
                 GLib.idle_add( lambda: self._gui_stop( num_letters, num_contracts ) )
             def _gui_start( self ):
                 spinner, label, assistant, page = self.gui_objects
-                label.set_text( "Rendere Briefe..." )
+                label.set_text( "Starte Rendering..." )
                 spinner.start()
             def _gui_update( self, text ):
                 spinner, label, assistant, page = self.gui_objects

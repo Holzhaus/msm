@@ -209,7 +209,25 @@ class Customer( Base ):
     department = Column( String )
     @property
     def name( self ):
-        return "%s %s" % ( self.prename, self.familyname )
+        if self.familyname:
+            if self.prename:
+                name = "%s %s" % ( self.prename, self.familyname )
+            else:
+                name = self.familyname
+        elif self.company1:
+            name = self.company1
+        return name
+    @property
+    def letter_salutation( self ):
+        if self.honourific == 'Herr':
+            salutation = 'Sehr geehrter Herr {}'.format( self.familyname )
+        elif self.honourific == 'Frau':
+            salutation = 'Sehr geehrte Frau {}'.format( self.familyname )
+        elif self.honourific == 'Familie':
+            salutation = 'Sehr geehrte Familie {}'.format( self.familyname )
+        else:
+            salutation = 'Sehr geehrte Damen und Herren'
+        return salutation
     def __eq__( self, other ):
         if isinstance( other, self.__class__ ):
             attr1 = self.__dict__.copy() # We copy the dicts, since we don't want to alter the original ones

@@ -1,3 +1,11 @@
 \documentclass[position]{scrlttr2}
-\input{ %{{ filename %}} }
-\endinput
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{marvosym}
+\DeclareUnicodeCharacter{20AC}{\EUR{}}
+\usepackage{graphicx,xcolor,eso-pic,tabularx}
+\usepackage{verbatimbox}
+\begin{document}
+((* for filename in filenames *))
+\input{ ((( filename ))) }((* endfor *))
+\end{document}
