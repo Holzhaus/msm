@@ -104,9 +104,30 @@ class InvoicingAssistant( GObject.GObject ):
                 self.contracts = merged_contracts
                 spinner, label, assistant, page, invoicetable = self.gui_objects
                 invoicetable.clear()
-                for unmerged_invoice in self.invoices:
-                    invoice = InvoicingAssistant.session().merge( unmerged_invoice )
-                    invoicetable.add_invoice( invoice )
+                def gen( invoicetable, invoices, session ):
+                    treeview = invoicetable.builder.get_object( "invoices_treeview" )
+                    model = invoicetable.builder.get_object( "invoices_liststore" )
+                    treeview.freeze_child_notify()
+                    sort_settings = model.get_sort_column_id()
+                    model.set_default_sort_func( lambda *unused: 0 )
+                    model.set_sort_column_id( -1, Gtk.SortType.ASCENDING )
+                    i = 0
+                    for unmerged_invoice in invoices:
+                        invoice = session.merge( unmerged_invoice )
+                        invoicetable.add_invoice( invoice )
+                        i += 1
+                        # change something
+                        if i % 10 == 0:
+                            # freeze/thaw not really  necessary here as sorting is wrong because of the
+                            # default sort function
+                            yield True
+                    if sort_settings != ( None, None ):
+                        model.set_sort_column_id( *sort_settings )
+                    treeview.thaw_child_notify()
+                    yield False
+                g = gen( invoicetable, self.invoices, InvoicingAssistant.session )
+                if next( g ): # run once now, remaining iterations when idle
+                    GLib.idle_add( next, g )
                 label.set_text( "Fertig! {} Rechnungen aus {} Verträgen generiert.".format( num_invoices, num_contracts ) )
                 spinner.stop()
                 assistant.set_page_complete( page, True )

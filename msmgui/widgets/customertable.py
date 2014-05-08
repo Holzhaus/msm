@@ -142,10 +142,11 @@ class CustomerTable( Gtk.Box ):
             model.set_sort_column_id( -1, Gtk.SortType.ASCENDING )
             i = 0
             for customer in core.database.Customer.get_all( session=self.session ):
-                self.add_customer( customer )
+                rowref = self.add_customer( customer )
+                del rowref
                 i += 1
                 # change something
-                if i % 10 == 0:
+                if i % 100 == 0:
                     # freeze/thaw not really  necessary here as sorting is wrong because of the
                     # default sort function
                     yield True
@@ -168,9 +169,6 @@ class CustomerTable( Gtk.Box ):
             return [customer.id, customer.familyname, customer.prename, customer.honourific, customer.title, customer.gender, birthday, customer.company1, customer.company2, customer.department, address.co, address.street, address.zipcode, address.city, has_running_contracts, color]
         else:
             return [customer.id, customer.familyname, customer.prename, customer.honourific, customer.title, customer.gender, birthday, customer.company1, customer.company2, customer.department, "", "", "", "", has_running_contracts, color]
-    def add_customer2( self, customer ):
-        self.add_customer( customer )
-        return False
     def add_customer( self, customer ):
         model = self.builder.get_object( "customers_liststore" )
         treeiter = model.append( CustomerTable.convert_customer_to_rowdata( customer ) )

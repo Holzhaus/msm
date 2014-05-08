@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, GLib
 from core.database import *
 from core.config import Configuration
 import locale
@@ -89,13 +89,33 @@ class InvoiceTable( Gtk.Box ):
     def get_contents( self ):
         return [row[0] for row in self.builder.get_object( "invoices_liststore" )]
     def fill( self ):
-        self.clear()
-        for invoice in core.database.Invoice.get_all():
-            self.add_invoice( invoice )
+        def gen():
+            treeview = self.builder.get_object( "invoices_treeview" )
+            model = self.builder.get_object( "invoices_liststore" )
+            treeview.freeze_child_notify()
+            sort_settings = model.get_sort_column_id()
+            print( sort_settings )
+            model.set_default_sort_func( lambda *unused: 0 )
+            model.set_sort_column_id( -1, Gtk.SortType.ASCENDING )
+            i = 0
+            for invoice in core.database.Invoice.get_all( session=self.session ):
+                self.add_invoice( invoice )
+                i += 1
+                # change something
+                if i % 10 == 0:
+                    # freeze/thaw not really  necessary here as sorting is wrong because of the
+                    # default sort function
+                    yield True
+            if sort_settings != ( None, None ):
+                model.set_sort_column_id( *sort_settings )
+            treeview.thaw_child_notify()
+            yield False
+        g = gen()
+        if next( g ): # run once now, remaining iterations when idle
+            GLib.idle_add( next, g )
     def add_invoice( self, invoice ):
         model = self.builder.get_object( "invoices_liststore" )
         treeiter = model.append( [ invoice ] )
-        print( list( model ) )
         return InvoiceRowReference( model, model.get_path( treeiter ) )
     def remove( self, rowref ):
         if not isinstance( rowref, InvoiceRowReference ):
@@ -257,7 +277,7 @@ class InvoiceTable( Gtk.Box ):
         model = treeview.get_model()
         rowref = InvoiceRowReference( model, path )
         invoice = rowref.get_invoice()
-        letter = core.pdfgenerator.Letter( [invoice] )
+        letter = core.pdfgenerator.Letter( invoice.contract, contents=[ invoice, ] )
         letter.preview()
     def invoices_treeview_selection_changed_cb( self, selection ):
         if self.selection_blocked:
