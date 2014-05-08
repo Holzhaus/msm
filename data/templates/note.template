@@ -2,9 +2,9 @@
 \setkomavar{signature}{((( signature|escape_tex|escape_nl )))}
 \setkomavar{date}{((( date )))}
 \setkomavar{subject}{((( subject|escape_tex|escape_nl )))}
-\opening{((( opening|escape_tex|escape_nl )))}
+\opening{((( opening|escape_tex|escape_nl ))),}
 
 ((( text )))
 
-\closing{ ((( closing|escape_tex|escape_nl ))) }
+\closing{ ((( closing|escape_tex|escape_nl ))),}
 \end{letter}
