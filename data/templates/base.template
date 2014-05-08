@@ -6,6 +6,7 @@
 \usepackage{graphicx,xcolor,eso-pic,tabularx}
 \usepackage{verbatimbox}
 \begin{document}
-((* for filename in filenames *))
-\input{ ((( filename ))) }((* endfor *))
+((* for prerendered_letter in prerendered_letters *))
+((( prerendered_letter )))
+((* endfor *))
 \end{document}

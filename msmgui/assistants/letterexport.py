@@ -84,21 +84,27 @@ class LetterExportAssistant( GObject.GObject ):
                 return letter
             def run( self ):
                 GLib.idle_add( lambda: self._gui_start() )
-                num_contracts = len( self.contracts )
                 local_session = core.database.Database.get_scoped_session()
+                num_contracts = len( self.contracts )
                 letters = []
-                num_letters = 0
                 for i, unmerged_contract in enumerate( self.contracts ):
                     contract = local_session.merge( unmerged_contract ) # add them to the local session
                     letter = self.contract_to_letter( contract )
                     if letter.has_contents():
                         letters.append( letter )
-                        num_letters += 1
-                        text = "Stelle zusammen ({})".format( num_letters )
+                    if i % 25 == 0:
+                        text = "Stelle zusammen ({}/{})".format( i, num_contracts )
                         GLib.idle_add( self._gui_update, text )
-                filename = "/tmp/exporttest.pdf"
-                GLib.idle_add( self._gui_update, "Rendere Briefe..." )
-                core.pdfgenerator.LetterRenderer.render( letters, filename )
+                num_letters = len( letters )
+                prerendered_letters = []
+                for i, prerendered_letter in enumerate( core.pdfgenerator.LetterRenderer.prerender( letters ) ):
+                    prerendered_letters.append( prerendered_letter )
+                    if i % 25 == 0:
+                         text = "Prerendering ({}/{})".format( i, num_letters )
+                         GLib.idle_add( self._gui_update, text )
+                output_file = "/tmp/exporttest.pdf"
+                GLib.idle_add( self._gui_update, "Finales Rendering..." )
+                core.pdfgenerator.LetterRenderer.render_prerendered_letters( prerendered_letters, output_file )
                 local_session.expunge_all() # expunge everything afterwards
                 local_session.remove()
                 GLib.idle_add( lambda: self._gui_stop( num_letters, num_contracts ) )

@@ -130,31 +130,42 @@ class LetterRenderer:
         if delete_file_after:
             os.remove( filepath )
     @staticmethod
-    def render( letters, output_file ):
-            # with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_dir = tempfile.mkdtemp( suffix='', prefix='tmplatex' )
-            tmp_files = []
-            if type( letters ) == Letter:
-                letter_list = [letters]
-            else:
-                letter_list = letters
-            for letter in letter_list:
-                for obj in letter.contents:
-                    tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "tex", dir=tmp_dir, delete=False )
-                    tmp_filename = tmp_file.name
-                    tmp_file.close()
-                    LetterRenderer._render_part( letter, obj, tmp_filename )
-                    tmp_files.append( tmp_filename )
-            template = template_env.get_template( "{}.template".format( "base" ) )
-            rendered_document = template.render( {'filenames':tmp_files} )
-            # try:
-            PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
-            """except PdfGenerator.LatexError:
-                return None
-            else:
-                return output_file"""
+    def prerender_part( letter ):
+        """ Generator function that prerenders a letter part. """
+        for obj in letter.contents:
+            prerendered_text = LetterRenderer._render_part( letter, obj )
+            if prerendered_text:
+                yield prerendered_text
     @staticmethod
-    def _render_part( letter, obj, output_file ):
+    def prerender( letters ):
+        """ Generator function that prerenders a whole letter. """
+        if type( letters ) == Letter:
+            letter_list = [letters]
+        else:
+            letter_list = letters
+        for letter in letter_list:
+            prerendered_parts = []
+            for prerendered_part in LetterRenderer.prerender_part( letter ):
+                prerendered_parts.append( prerendered_part )
+            yield '\n'.join( prerendered_parts )
+    @staticmethod
+    def render( letters, output_file ):
+        """
+        Takes a single letter or a list of letters and renderes them to output_file.
+        Shortcut for calling for calling LetterRenderer.prerender() as for loop and
+        then passing the result to LetterRenderer.render_prerendered_letters()
+        """
+        prerendered_letters = []
+        for prerendered_letter in LetterRenderer.prerender( letters ):
+            prerendered_letters.append( prerendered_letter )
+        LetterRenderer.render_prerendered_letters( prerendered_letters, output_file )
+    @staticmethod
+    def render_prerendered_letters( prerendered_letters, output_file ):
+        template = template_env.get_template( "{}.template".format( "base" ) )
+        rendered_document = template.render( {'prerendered_letters':prerendered_letters} )
+        PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
+    @staticmethod
+    def _render_part( letter, obj ):
         templatevars = {'closing':'Mit freundlichen Grüßen',
                         'signature':'POSITION\nAbo-Service',
                         'recipient':"%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
@@ -163,14 +174,12 @@ class LetterRenderer:
                         'customer': letter.contract.customer,
                         'contract': letter.contract}
         if isinstance( obj, core.database.Invoice ):
-            rendered_text = LetterRenderer._render_invoice( templatevars, obj, output_file )
+            rendered_text = LetterRenderer._render_invoice( templatevars, obj )
         elif isinstance( obj, core.database.Note ):
-            rendered_text = LetterRenderer._render_note( templatevars, obj, output_file )
-        f = open( output_file, "w", encoding="utf-8" )
-        f.write( rendered_text )
-        f.close()
+            rendered_text = LetterRenderer._render_note( templatevars, obj )
+        return rendered_text
     @staticmethod
-    def _render_invoice( generic_templatevars, invoice, output_file ):
+    def _render_invoice( generic_templatevars, invoice ):
         invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
         templatevars = generic_templatevars.copy()
         templatevars.update( {'invoice_no': invoice_no,
@@ -187,7 +196,7 @@ class LetterRenderer:
         template = template_env.get_template( "{}.template".format( "invoice" ) )
         return template.render( templatevars )
     @staticmethod
-    def _render_note( generic_templatevars, note, output_file ):
+    def _render_note( generic_templatevars, note ):
         templatevars = generic_templatevars.copy()
         text = template_env.from_string( note.text ).render( templatevars )
         templatevars.update( {'subject': note.subject,
