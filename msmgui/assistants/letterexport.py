@@ -92,14 +92,14 @@ class LetterExportAssistant( GObject.GObject ):
                     letter = self.contract_to_letter( contract )
                     if letter.has_contents():
                         letters.append( letter )
-                    if i % 25 == 0:
+                    if i % 100 == 0:
                         text = "Stelle zusammen ({}/{})".format( i, num_contracts )
                         GLib.idle_add( self._gui_update, text )
                 num_letters = len( letters )
                 prerendered_letters = []
                 for i, prerendered_letter in enumerate( core.pdfgenerator.LetterRenderer.prerender( letters ) ):
                     prerendered_letters.append( prerendered_letter )
-                    if i % 25 == 0:
+                    if i % 100 == 0:
                          text = "Prerendering ({}/{})".format( i, num_letters )
                          GLib.idle_add( self._gui_update, text )
                 output_file = "/tmp/exporttest.pdf"
