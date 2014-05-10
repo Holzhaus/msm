@@ -8,41 +8,40 @@ import msmgui.rowreference
 import core.pdfgenerator
 import sys, os, subprocess
 class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
-        def __init__( self, model, path ):
-            """Constructor. Internally, the reference always points to the row in the base Gtk.TreeModel."""
-            treeiter = model.get_iter( path )
-            while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
-                treeiter = model.convert_iter_to_child_iter( treeiter )
-                model = model.get_model()
-            path = model.get_path( treeiter )
-            if not isinstance( model, ( Gtk.ListStore, Gtk.TreeStore ) ):
-                raise TypeError( "Specified base TreeModel is invalid" )
-            self._rowref = Gtk.TreeRowReference.new( model, path )
-        def get_selection_iter( self, model ):
-            """Return the Gtk.TreeIter for the selection Gtk.TreeModel."""
-            models = [ model ]
-            while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
-                model = model.get_model()
-                models.append( model )
-            if models[-1] is not self.get_model():
-                raise RuntimeError( "TreeModel mismatch" )
-
-            treeiter = self.get_iter()
-            for model in models:
-                success, treeiter = model.convert_child_iter_to_iter( treeiter )
-                if not success:
-                    raise ValueError( "TreeIter invalid" )
-            return treeiter
-        def get_selection_path( self, model ):
-            """Return the Gtk.TreePath for the selection Gtk.TreeModel."""
-            treeiter = self.get_selection_iter( model )
-            path = model.get_path( treeiter )
-            return path
-        def get_invoice( self ):
-            """Returns the core.database.Invoice that is associated with the Gtk.TreeRow that this instance references."""
-            row = self.get_row()
-            invoice = row[0]
-            return invoice
+    def __init__( self, model, path ):
+        """Constructor. Internally, the reference always points to the row in the base Gtk.TreeModel."""
+        treeiter = model.get_iter( path )
+        while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
+            treeiter = model.convert_iter_to_child_iter( treeiter )
+            model = model.get_model()
+        path = model.get_path( treeiter )
+        if not isinstance( model, ( Gtk.ListStore, Gtk.TreeStore ) ):
+            raise TypeError( "Specified base TreeModel is invalid" )
+        self._rowref = Gtk.TreeRowReference.new( model, path )
+    def get_selection_iter( self, model ):
+        """Return the Gtk.TreeIter for the selection Gtk.TreeModel."""
+        models = [ model ]
+        while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
+            model = model.get_model()
+            models.append( model )
+        if models[-1] is not self.get_model():
+            raise RuntimeError( "TreeModel mismatch" )
+        treeiter = self.get_iter()
+        for model in models:
+            success, treeiter = model.convert_child_iter_to_iter( treeiter )
+            if not success:
+                raise ValueError( "TreeIter invalid" )
+        return treeiter
+    def get_selection_path( self, model ):
+        """Return the Gtk.TreePath for the selection Gtk.TreeModel."""
+        treeiter = self.get_selection_iter( model )
+        path = model.get_path( treeiter )
+        return path
+    def get_invoice( self ):
+        """Returns the core.database.Invoice that is associated with the Gtk.TreeRow that this instance references."""
+        row = self.get_row()
+        invoice = row[0]
+        return invoice
 
 class InvoiceTable( Gtk.Box ):
     MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
