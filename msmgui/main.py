@@ -44,6 +44,10 @@ class MainWindow( Gtk.ApplicationWindow ):
         self.add_action( about_action )
 
         self.manager = database
+
+        notebook = self.builder.get_object( "notebook" )
+        page = self.builder.get_object( "customerwindow" )
+        self.notebook_switch_page_cb( notebook, page, notebook.get_current_page() ) # Call the loading routine manually for first time
     def add_status_message( self, message ):
         statusbar = self.builder.get_object( "statusbar" )
         context_id = statusbar.get_context_id( message )
@@ -55,6 +59,11 @@ class MainWindow( Gtk.ApplicationWindow ):
     """Callbacks"""
     def statusbar_cb( self, sender, message ):
         self.add_status_message( message )
+    def notebook_switch_page_cb( self, notebook, page, page_num, user_data=None ):
+        if page_num == notebook.page_num( self.builder.get_object( "customerwindow" ) ):
+            self._customerwindow.refresh()
+        elif page_num == notebook.page_num( self.builder.get_object( "invoicewindow" ) ):
+            self._invoicewindow.refresh()
 """    def magazines_treeview_selection_changed_cb( self, selection ):
         model, treeiter = selection.get_selected()
         if treeiter != None:
