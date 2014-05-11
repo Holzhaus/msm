@@ -47,7 +47,9 @@ class InvoiceTable( Gtk.Box ):
     MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
     FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
-        'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () )
+        'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
+        'loading-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
+        'loading-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
@@ -62,10 +64,13 @@ class InvoiceTable( Gtk.Box ):
         # Connect Signals
         self.builder.connect_signals( self )
 
-        # Use the filter function
-        self.builder.get_object( 'invoices_treemodelfilter' ).set_visible_func( self._is_row_visible )
         # Use the selection function
         self.builder.get_object( 'invoices_treeview_selection' ).set_select_function( self._is_row_selection_changeable, None )
+
+        model = self.builder.get_object( "invoices_liststore" )
+        self._invoices_treemodelfilter = model.filter_new()
+        self._invoices_treemodelfilter.set_visible_func( self._is_row_visible )
+        self._invoices_treemodelsort = Gtk.TreeModelSort( self._invoices_treemodelfilter )
 
         self.builder.get_object( "invoices_id_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_id_cellrenderertext" ), self.id_cell_data_func )
         self.builder.get_object( "invoices_contractrefid_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_contractrefid_cellrenderertext" ), self.contractrefid_cell_data_func )
@@ -75,6 +80,7 @@ class InvoiceTable( Gtk.Box ):
         self.builder.get_object( "invoices_valueleft_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_valueleft_cellrenderertext" ), self.valueleft_cell_data_func )
 
         # Add properties
+        self.needs_refresh = True
         self._active_only = True
         self._filter = ""
         self._selection_blocked = False
@@ -87,29 +93,37 @@ class InvoiceTable( Gtk.Box ):
         self.builder.get_object( "invoices_liststore" ).clear()
     def get_contents( self ):
         return [row[0] for row in self.builder.get_object( "invoices_liststore" )]
-    def fill( self ):
-        def gen():
-            treeview = self.builder.get_object( "invoices_treeview" )
-            model = self.builder.get_object( "invoices_liststore" )
-            treeview.freeze_child_notify()
-            sort_settings = model.get_sort_column_id()
-            print( sort_settings )
-            model.set_default_sort_func( lambda *unused: 0 )
-            model.set_sort_column_id( -1, Gtk.SortType.ASCENDING )
-            i = 0
-            for invoice in core.database.Invoice.get_all( session=self.session ):
-                self.add_invoice( invoice )
-                i += 1
-                # change something
-                if i % 10 == 0:
-                    # freeze/thaw not really  necessary here as sorting is wrong because of the
-                    # default sort function
-                    yield True
-            if sort_settings != ( None, None ):
-                model.set_sort_column_id( *sort_settings )
-            treeview.thaw_child_notify()
-            yield False
-        g = gen()
+    def _refresh_generator( self, step=25 ):
+        self.needs_refresh = False
+        self.emit( 'loading-started' )
+        treeview = self.builder.get_object( "invoices_treeview" )
+        model = self.builder.get_object( "invoices_liststore" )
+        treeview.freeze_child_notify()
+        self.set_sensitive( False )
+        treeview.set_model( None )
+        del self._invoices_treemodelsort
+        del self._invoices_treemodelfilter
+        for i, invoice in enumerate( core.database.Invoice.get_all( session=self.session ) ):
+            rowref = self.add_invoice( invoice )
+            del rowref
+            # change something
+            if i % step == 0:
+                # freeze/thaw not really  necessary here as sorting is wrong because of the
+                # default sort function
+                yield True
+        self._invoices_treemodelfilter = model.filter_new()
+        self._invoices_treemodelfilter.set_visible_func( self._is_row_visible )
+        GLib.idle_add( self.refilter )
+        self._invoices_treemodelsort = Gtk.TreeModelSort( self._invoices_treemodelfilter )
+        treeview.set_model( self._invoices_treemodelsort )
+        treeview.thaw_child_notify()
+        self.set_sensitive( True )
+        self.emit( 'loading-ended' )
+        yield False
+    def refresh( self ):
+        if not self.needs_refresh:
+            return
+        g = self._refresh_generator()
         if next( g ): # run once now, remaining iterations when idle
             GLib.idle_add( next, g )
     def add_invoice( self, invoice ):
@@ -156,7 +170,11 @@ class InvoiceTable( Gtk.Box ):
             self._filter = q
             if not ( len( old_q ) < self.MIN_FILTER_LEN and len( q ) < self.MIN_FILTER_LEN ):
                 # No need to refilter if the filter string is discarded anyway because it's too short
-                self.builder.get_object( 'invoices_treemodelfilter' ).refilter()
+                GLib.idle_add( self.refilter )
+    def refilter( self ):
+        if hasattr( self, '_invoices_treemodelfilter' ):
+            self._invoices_treemodelfilter.refilter()
+        return False
     @property
     def active_only( self ):
         '''Show only active invoices (i.e. invoices with running contracts)'''
@@ -168,7 +186,7 @@ class InvoiceTable( Gtk.Box ):
         if self._active_only != value:
             self._active_only = value
             Configuration().set( "Interface", "active_only", self._active_only )
-            self.builder.get_object( 'invoices_treemodelfilter' ).refilter()
+            GLib.idle_add( self.refilter )
     def _is_row_visible( self, model, treeiter, data=None ):
         rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
         if rowref == self.selection:
@@ -287,5 +305,5 @@ class InvoiceTable( Gtk.Box ):
             self._current_selection = InvoiceRowReference( model, model.get_path( treeiter ) )
         else:
              self._current_selection = None
-        self.builder.get_object( 'invoices_treemodelfilter' ).refilter()
+        GLib.idle_add( self.refilter )
         self.emit( "selection-changed" )

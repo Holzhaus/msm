@@ -26,11 +26,16 @@ class CustomerWindow( Gtk.Box ):
         self._customertable = msmgui.widgets.customertable.CustomerTable()
         self.builder.get_object( "tablebox" ).add( self._customertable )
         self._customertable.connect( "selection-changed", self.customertable_selection_changed_cb )
-        self._customertable.fill()
-
+        self._loadingspinner = Gtk.Spinner()
+        self._loadingspinner.hide()
+        self.builder.get_object( 'content' ).add_overlay( self._loadingspinner )
+        self._customertable.connect( "loading-started", self.customertable_loading_started_cb )
+        self._customertable.connect( "loading-ended", self.customertable_loading_ended_cb )
         active_only = Configuration().getboolean( "Interface", "active_only" )
         if not active_only:
             self.builder.get_object( "customers_showall_switch" ).set_active( not active_only )
+    def refresh( self ):
+        self._customertable.refresh()
     """Callbacks"""
     def customereditor_saved_cb( self, editor, customer_id, is_new ):
         if is_new:
@@ -85,6 +90,14 @@ class CustomerWindow( Gtk.Box ):
             else:
                 self.builder.get_object( "customers_delete_button" ).set_sensitive( True )
                 self.builder.get_object( "customers_edit_togglebutton" ).set_sensitive( True )
+    def customertable_loading_started_cb( self, customertable ):
+        self.set_sensitive( False )
+        self._loadingspinner.show()
+        self._loadingspinner.start()
+    def customertable_loading_ended_cb( self, customertable ):
+        self._loadingspinner.stop()
+        self._loadingspinner.hide()
+        self.set_sensitive( True )
     def customers_add_togglebutton_toggled_cb( self, toggle ):
         if toggle.get_active():
             edit_togglebutton = self.builder.get_object( "customers_edit_togglebutton" )

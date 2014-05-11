@@ -5,9 +5,7 @@ import core.database
 from core.config import Configuration
 import locale
 import msmgui.rowreference
-from core.database import PaymentType
 class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
-    builder = None
     @staticmethod
     def new_by_iter( model, treeiter ):
         """Convenience method that creates an instance by Gtk.TreeIter, not by Gtk.TreePath"""
@@ -21,31 +19,28 @@ class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
             treeiter = model.convert_iter_to_child_iter( treeiter )
             model = model.get_model()
         path = model.get_path( treeiter )
-        if model is not CustomerRowReference.builder.get_object( "customers_liststore" ) or not isinstance( model, Gtk.ListStore ):
+        if not isinstance( model, ( Gtk.ListStore, Gtk.TreeStore ) ):
             raise TypeError( "Specified base TreeModel is invalid" )
         self._rowref = Gtk.TreeRowReference.new( model, path )
-    def get_selection_iter( self ):
+    def get_selection_iter( self, model ):
         """Return the Gtk.TreeIter for the selection Gtk.TreeModel."""
+        models = [ model ]
+        while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
+            model = model.get_model()
+            models.append( model )
+        if models[-1] is not self.get_model():
+            raise RuntimeError( "TreeModel mismatch" )
         treeiter = self.get_iter()
-        success, treeiter = CustomerRowReference.builder.get_object( "customers_treemodelfilter" ).convert_child_iter_to_iter( treeiter )
-        if not success:
-            raise ValueError( "TreeIter invalid" )
-        success, treeiter = self.get_selection_model().convert_child_iter_to_iter( treeiter )
-        if not success:
-            raise ValueError( "TreeIter invalid" )
+        for model in models:
+            success, treeiter = model.convert_child_iter_to_iter( treeiter )
+            if not success:
+                raise ValueError( "TreeIter invalid" )
         return treeiter
-    def get_selection_path( self ):
+    def get_selection_path( self, model ):
         """Return the Gtk.TreePath for the selection Gtk.TreeModel."""
-        model = self.get_selection_model()
-        treeiter = self.get_selection_iter()
+        treeiter = self.get_selection_iter( model )
         path = model.get_path( treeiter )
         return path
-    def get_selection_model( self ):
-        """Return the selection Gtk.TreeModel."""
-        model = CustomerRowReference.builder.get_object( "customers_treemodelsort" )
-        if not isinstance( model, Gtk.TreeModelSort ):
-            raise TypeError( "Specified selection TreeModel is invalid" )
-        return model
     def get_customer( self ):
         """Returns the core.database.Customer that is associated with the Gtk.TreeRow that this instance references."""
         row = self.get_row()
@@ -59,7 +54,9 @@ class CustomerTable( Gtk.Box ):
     MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
     FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
-        'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () )
+        'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
+        'loading-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
+        'loading-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
@@ -74,13 +71,16 @@ class CustomerTable( Gtk.Box ):
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals
         self.builder.connect_signals( self )
-
-        # Use the filter function
-        self.builder.get_object( 'customers_treemodelfilter' ).set_visible_func( self._is_row_visible )
         # Use the selection function
         self.builder.get_object( 'customers_treeview_selection' ).set_select_function( self._is_row_selection_changeable, None )
 
+        model = self.builder.get_object( "customers_liststore" )
+        self._customers_treemodelfilter = model.filter_new()
+        self._customers_treemodelfilter.set_visible_func( self._is_row_visible )
+        self._customers_treemodelsort = Gtk.TreeModelSort( self._customers_treemodelfilter )
+
         # Add properties
+        self.needs_refresh = True
         self._active_only = True
         self._filter = ""
         self._selection_blocked = False
@@ -131,30 +131,37 @@ class CustomerTable( Gtk.Box ):
     """Data interaction"""
     def clear( self ):
         self.builder.get_object( "customers_liststore" ).clear()
-    def fill( self ):
-        def gen():
-            treeview = self.builder.get_object( "customers_treeview" )
-            model = self.builder.get_object( "customers_liststore" )
-            treeview.freeze_child_notify()
-            sort_settings = model.get_sort_column_id()
-            print( sort_settings )
-            model.set_default_sort_func( lambda *unused: 0 )
-            model.set_sort_column_id( -1, Gtk.SortType.ASCENDING )
-            i = 0
-            for customer in core.database.Customer.get_all( session=self.session ):
-                rowref = self.add_customer( customer )
-                del rowref
-                i += 1
-                # change something
-                if i % 100 == 0:
-                    # freeze/thaw not really  necessary here as sorting is wrong because of the
-                    # default sort function
-                    yield True
-            if sort_settings != ( None, None ):
-                model.set_sort_column_id( *sort_settings )
-            treeview.thaw_child_notify()
-            yield False
-        g = gen()
+    def _refresh_generator( self, step=25 ):
+        self.needs_refresh = False
+        self.emit( 'loading-started' )
+        treeview = self.builder.get_object( "customers_treeview" )
+        model = self.builder.get_object( "customers_liststore" )
+        treeview.freeze_child_notify()
+        self.set_sensitive( False )
+        treeview.set_model( None )
+        del self._customers_treemodelsort
+        del self._customers_treemodelfilter
+        for i, customer in enumerate( core.database.Customer.get_all( session=self.session ) ):
+            rowref = self.add_customer( customer )
+            del rowref
+            # change something
+            if i % step == 0:
+                # freeze/thaw not really  necessary here as sorting is wrong because of the
+                # default sort function
+                yield True
+        self._customers_treemodelfilter = model.filter_new()
+        self._customers_treemodelfilter.set_visible_func( self._is_row_visible )
+        GLib.idle_add( self.refilter )
+        self._customers_treemodelsort = Gtk.TreeModelSort( self._customers_treemodelfilter )
+        treeview.set_model( self._customers_treemodelsort )
+        treeview.thaw_child_notify()
+        self.set_sensitive( True )
+        self.emit( 'loading-ended' )
+        yield False
+    def refresh( self ):
+        if not self.needs_refresh:
+            return
+        g = self._refresh_generator()
         if next( g ): # run once now, remaining iterations when idle
             GLib.idle_add( next, g )
     @staticmethod
@@ -218,7 +225,11 @@ class CustomerTable( Gtk.Box ):
             self._filter = q
             if not ( len( old_q ) < self.MIN_FILTER_LEN and len( q ) < self.MIN_FILTER_LEN ):
                 # No need to refilter if the filter string is discarded anyway because it's too short
-                GLib.idle_add( lambda: self.builder.get_object( 'customers_treemodelfilter' ).refilter() )
+                GLib.idle_add( self.refilter )
+    def refilter( self ):
+        if hasattr( self, '_customers_treemodelfilter' ):
+            self._customers_treemodelfilter.refilter()
+        return False
     @property
     def active_only( self ):
         '''Show only active customers (i.e. customers with running contracts)'''
@@ -230,7 +241,7 @@ class CustomerTable( Gtk.Box ):
         if self._active_only != value:
             self._active_only = value
             Configuration().set( "Interface", "active_only", self._active_only )
-            GLib.idle_add( lambda: self.builder.get_object( 'customers_treemodelfilter' ).refilter() )
+            GLib.idle_add( self.refilter )
     def _is_row_visible( self, model, treeiter, data=None ):
         rowref = CustomerRowReference.new_by_iter( model, treeiter )
         if rowref == self.selection:
@@ -263,9 +274,7 @@ class CustomerTable( Gtk.Box ):
             else:
                 rowref = new_selection
             if self.selection is None or self._current_selection.get_row() is not rowref.get_row():
-                if treeselection.get_tree_view().get_model() is not rowref.get_selection_model():
-                    raise AttributeError( "CustomerRowReference selection model mismatch" )
-                treeselection.select_iter( rowref.get_selection_iter() )
+                treeselection.select_iter( rowref.get_selection_iter( self._customers_treemodelsort ) )
                 self._current_selection = rowref
             else:
                 raise ValueError
@@ -294,5 +303,5 @@ class CustomerTable( Gtk.Box ):
             self._current_selection = CustomerRowReference.new_by_iter( model, treeiter )
         else:
              self._current_selection = None
-        self.builder.get_object( 'customers_treemodelfilter' ).refilter()
+        GLib.idle_add( self.refilter )
         self.emit( "selection-changed" )
