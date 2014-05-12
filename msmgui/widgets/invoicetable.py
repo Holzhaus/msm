@@ -48,8 +48,8 @@ class InvoiceTable( Gtk.Box ):
     FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
         'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
-        'loading-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
-        'loading-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
+        'refresh-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
+        'refresh-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
@@ -81,6 +81,7 @@ class InvoiceTable( Gtk.Box ):
 
         # Add properties
         self.needs_refresh = True
+        self.currently_refreshing = False
         self._active_only = True
         self._filter = ""
         self._selection_blocked = False
@@ -94,8 +95,9 @@ class InvoiceTable( Gtk.Box ):
     def get_contents( self ):
         return [row[0] for row in self.builder.get_object( "invoices_liststore" )]
     def _refresh_generator( self, step=25 ):
+        self.currently_refreshing = True
         self.needs_refresh = False
-        self.emit( 'loading-started' )
+        self.emit( 'refresh-started' )
         treeview = self.builder.get_object( "invoices_treeview" )
         model = self.builder.get_object( "invoices_liststore" )
         treeview.freeze_child_notify()
@@ -118,7 +120,8 @@ class InvoiceTable( Gtk.Box ):
         treeview.set_model( self._invoices_treemodelsort )
         treeview.thaw_child_notify()
         self.set_sensitive( True )
-        self.emit( 'loading-ended' )
+        self.currently_refreshing = False
+        self.emit( 'refresh-ended' )
         yield False
     def refresh( self ):
         if not self.needs_refresh:

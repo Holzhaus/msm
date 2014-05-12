@@ -7,25 +7,21 @@ import datetime
 import core.database
 import msmgui.assistants.invoicing
 import msmgui.assistants.letterexport
-class InvoiceWindow( Gtk.Box ):
+import msmgui.widgets.refreshablewindow
+class InvoiceWindow( msmgui.widgets.refreshablewindow.RefreshableWindow ):
     __gsignals__ = {
         'status-changed': ( GObject.SIGNAL_RUN_FIRST, None, ( str, ) )
     }
     def __init__( self ):
-        Gtk.Box.__init__( self )
+        self._invoicetable = msmgui.widgets.invoicetable.InvoiceTable()
+        msmgui.widgets.refreshablewindow.RefreshableWindow.__init__( self, [self._invoicetable] )
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/widgets/invoicewindow/invoicewindow.glade" )
         self.builder.get_object( "content" ).reparent( self )
         self.builder.connect_signals( self )
 
-        self._invoicetable = msmgui.widgets.invoicetable.InvoiceTable()
         self.builder.get_object( "tablebox" ).add( self._invoicetable )
         self._invoicetable.connect( "selection-changed", self.invoicetable_selection_changed_cb )
-        self._loadingspinner = Gtk.Spinner()
-        self._loadingspinner.hide()
-        self.builder.get_object( 'content' ).add_overlay( self._loadingspinner )
-        self._invoicetable.connect( "loading-started", self.invoicetable_loading_started_cb )
-        self._invoicetable.connect( "loading-ended", self.invoicetable_loading_ended_cb )
 
         self._invoicingassistant = msmgui.assistants.invoicing.InvoicingAssistant()
         self._invoicingassistant.connect( "saved", self.invoicingassistant_saved_cb )
@@ -35,18 +31,8 @@ class InvoiceWindow( Gtk.Box ):
         active_only = Configuration().getboolean( "Interface", "active_only" )
         if not active_only:
             self.builder.get_object( "invoices_showall_switch" ).set_active( not active_only )
-    def refresh( self ):
-        self._invoicetable.refresh()
     def invoicetable_selection_changed_cb( self, table ):
         pass
-    def invoicetable_loading_started_cb( self, invoicetable ):
-        self.set_sensitive( False )
-        self._loadingspinner.show()
-        self._loadingspinner.start()
-    def invoicetable_loading_ended_cb( self, invoicetable ):
-        self._loadingspinner.stop()
-        self._loadingspinner.hide()
-        self.set_sensitive( True )
     def invoices_search_entry_changed_cb( self, entry ):
         self._invoicetable.filter = entry.get_text().strip()
     def invoices_showall_switch_notify_active_cb( self, switch, param_spec ):

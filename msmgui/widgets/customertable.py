@@ -55,8 +55,8 @@ class CustomerTable( Gtk.Box ):
     FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
         'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
-        'loading-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
-        'loading-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
+        'refresh-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
+        'refresh-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
@@ -80,6 +80,7 @@ class CustomerTable( Gtk.Box ):
         self._customers_treemodelsort = Gtk.TreeModelSort( self._customers_treemodelfilter )
 
         # Add properties
+        self.currently_refreshing = False
         self.needs_refresh = True
         self._active_only = True
         self._filter = ""
@@ -132,8 +133,9 @@ class CustomerTable( Gtk.Box ):
     def clear( self ):
         self.builder.get_object( "customers_liststore" ).clear()
     def _refresh_generator( self, step=25 ):
+        self.currently_refreshing = True
         self.needs_refresh = False
-        self.emit( 'loading-started' )
+        self.emit( 'refresh-started' )
         treeview = self.builder.get_object( "customers_treeview" )
         model = self.builder.get_object( "customers_liststore" )
         treeview.freeze_child_notify()
@@ -156,7 +158,8 @@ class CustomerTable( Gtk.Box ):
         treeview.set_model( self._customers_treemodelsort )
         treeview.thaw_child_notify()
         self.set_sensitive( True )
-        self.emit( 'loading-ended' )
+        self.currently_refreshing = False
+        self.emit( 'refresh-ended' )
         yield False
     def refresh( self ):
         if not self.needs_refresh:
