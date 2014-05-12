@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject, GLib
-import core.database
+from core.database import *
 from core.config import Configuration
 import locale
 import msmgui.rowreference
 import core.pdfgenerator
+import sys, os, subprocess
 class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
     def __init__( self, model, path ):
         """Constructor. Internally, the reference always points to the row in the base Gtk.TreeModel."""
