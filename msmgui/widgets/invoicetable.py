@@ -154,10 +154,6 @@ class InvoiceTable( Gtk.Box ):
                 return InvoiceRowReference( model, model.get_path( treeiter ) )
             treeiter = model.iter_next( treeiter )
         return None
-    def update_invoice_by_id( self, invoice_id ):
-        rowref = self._get_rowref_by_invoice_id( invoice_id )
-        if rowref is None:
-            raise ValueError( "No row for given invoice_id" )
     """Filtering stuff"""
     @property
     def filter( self ):
