@@ -104,7 +104,7 @@ class InvoicingAssistant( GObject.GObject ):
                 self.contracts = merged_contracts
                 spinner, label, assistant, page, invoicetable = self.gui_objects
                 invoicetable.clear()
-                def gen( invoicetable, invoices, session ):
+                def gen( invoicetable, invoices, session, step=10 ):
                     treeview = invoicetable.builder.get_object( "invoices_treeview" )
                     model = invoicetable.builder.get_object( "invoices_liststore" )
                     treeview.freeze_child_notify()
@@ -117,7 +117,7 @@ class InvoicingAssistant( GObject.GObject ):
                         invoicetable.add_invoice( invoice )
                         i += 1
                         # change something
-                        if i % 10 == 0:
+                        if i % step == 0:
                             # freeze/thaw not really  necessary here as sorting is wrong because of the
                             # default sort function
                             yield True
