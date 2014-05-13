@@ -61,6 +61,7 @@ class InvoiceWindow( msmgui.widgets.refreshablewindow.RefreshableWindow ):
     def invoicingassistant_saved_cb( self, assistant, num_invoices ):
         if num_invoices > 0:
             self.emit( "status-changed", ( "Eine Rechnung erstellt." if num_invoices == 1 else "%d Rechnungen erstellt." % num_invoices ) )
+            self._invoicetable.needs_refresh = True
             self.refresh()
         else:
             self.emit( "status-changed", "Keine Rechnungen erstellt." )
