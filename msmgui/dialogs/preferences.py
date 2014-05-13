@@ -102,5 +102,4 @@ class PreferencesDialog( object ):
             PreferencesDialog.session().commit()
         else: # Discard new config values
             PreferencesDialog.session().rollback()
-        PreferencesDialog.session().close()
         self.hide()
