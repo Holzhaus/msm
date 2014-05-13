@@ -71,13 +71,13 @@ class MagazineManager( Gtk.Box ):
             raise TypeError( "Expected MagazineManagerRowReference, not {}".format( type( rowref ).__name__ ) )
         magazine = rowref.get_magazine()
         # TODO: Check if magazine is currently in use
-        if magazine in msmgui.customereditor.main.CustomerEditor.session().new:
-            self._customer.magazines.remove( magazine )
+        if magazine in MagazineManager.session.new:
+            MagazineManager.session.remove( magazine )
         else:
-            msmgui.customereditor.main.CustomerEditor.session().delete( magazine )
+            MagazineManager.session.delete( magazine )
         model = rowref.get_model()
         treeiter = rowref.get_iter()
-        model.remove( treeiter )  # Remove row from table
+        model.remove( treeiter ) # Remove row from table
     def _gui_clear( self ):
         self.builder.get_object( "subscriptions_treeview_selection" ).unselect_all()
         self.builder.get_object( "subscriptions_treestore" ).clear()
@@ -269,7 +269,7 @@ class MagazineEditor( Gtk.Box ):
         model = self.builder.get_object( 'issues_liststore' )
         rowref = IssueRowReference( model, Gtk.TreePath( path_string ) )
         issue = rowref.get_issue()
-        issue.number = int( new_text )
+        issue.year = int( new_text )
         self.emit( "changed" )
     def magazine_name_entry_changed_cb( self, entry ):
         if self.signals_blocked: return
