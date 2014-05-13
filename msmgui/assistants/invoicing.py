@@ -6,6 +6,8 @@ import msmgui.widgets.invoicetable
 import locale
 import datetime
 import threading
+import dateutil
+from core.errors import InvoiceError
 class InvoicingAssistant( GObject.GObject ):
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
     session = None
@@ -80,8 +82,10 @@ class InvoicingAssistant( GObject.GObject ):
                     contract = local_session.merge( unmerged_contract ) # add them to the local session
                     try:
                         invoice = contract.add_invoice( **self.invoice_options )
-                    except ( ValueError, TypeError ):
+                    except InvoiceError as err:
+                        print( err )
                         invoice = None
+                        # raise
                     if invoice is not None:
                         self.invoices.append( invoice )
                     i += 1
@@ -140,7 +144,8 @@ class InvoicingAssistant( GObject.GObject ):
         InvoicingAssistant.session.expunge_all()
         date = datetime.date.today()
         maturity = datetime.timedelta( days=14 )
-        threadobj = ThreadObject( contracts, {"date":date, "maturity":maturity}, gui_objects )
+        accounting_enddate = dateutil.parser.parse( self.builder.get_object( "invoice_accountingenddate_entry" ).get_text(), dayfirst=True ).date()
+        threadobj = ThreadObject( contracts, {"date":date, "maturity":maturity, "accounting_enddate": accounting_enddate}, gui_objects )
         threadobj.start()
     def page_save_prepare_func( self, assistant, page ):
         class ThreadObject( GObject.GObject, threading.Thread ):

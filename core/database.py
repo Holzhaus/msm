@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import decimal
+import locale
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import event, orm, create_engine, func, sql
 from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Text, Date, ForeignKey
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
 Base = declarative_base()
 import datetime, random, string, re
+from core.errors import InvoiceError
 
 zipcodes = {}
 bankcodes = {}
@@ -524,7 +527,6 @@ class Contract( Base ):
     billingaddress = relationship( Address, primaryjoin=( billingaddress_id == Address.id ) )
     @property
     def price_per_issue( self ):
-        import decimal
         ctx = decimal.Context( prec=2, rounding=decimal.ROUND_HALF_EVEN )
         val = ctx.create_decimal( self.value )
         num = ctx.create_decimal( self.subscription.total_number_of_issues )
@@ -661,9 +663,9 @@ class Contract( Base ):
             raise TypeError( "date has to be of type datetime.date, not {}".format( type( date ).__name__ ) )
         if due_date is None:
             if maturity is None:
-                raise ValueError( "Either due_date or maturity has to be set" )
+                raise InvoiceError( "Either due_date or maturity has to be set" )
             elif not isinstance( maturity, datetime.timedelta ):
-                raise TypeError( "maturity has to be of type datetime.timedelta, not {}".format( type( maturity ).__name__ ) )
+                raise InvoiceError( "maturity has to be of type datetime.timedelta, not {}".format( type( maturity ).__name__ ) )
             due_date = date + maturity
         elif not isinstance( due_date, datetime.date ):
             raise TypeError( "due_date has to be of type datetime.date, not {}".format( type( due_date ).__name__ ) )
@@ -679,12 +681,12 @@ class Contract( Base ):
             else:
                 accounting_startdate = self.startdate # assume this invoice's accounting period starts on the contract's startdate
         else:
-            if previous_invoice is not None and accounting_startdate <= previous_invoice.enddate: # we don't want that our customers have to pay twice
-                raise ValueError( "accounting period overlaps with the accounting period of the last invoice" )
-            elif accounting_startdate <= self.startdate:
-                raise ValueError( "accounting period starts before the contract" )
+            if previous_invoice is not None and accounting_startdate <= previous_invoice.accounting_enddate: # we don't want that our customers have to pay twice
+                raise InvoiceError( "accounting period overlaps with the accounting period of the last invoice" )
+            elif accounting_startdate < self.startdate:
+                raise InvoiceError( "accounting period starts before the contract ({} < {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), self.startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
         if accounting_startdate >= accounting_enddate:
-            raise ValueError( "accounting_startdate has to be earlier than accountig_enddate." )
+            raise InvoiceError( "accounting_startdate has to be earlier than accountig_enddate ({} >= {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), accounting_enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
         # Now we can continue as everything should be fine now
         invoice = Invoice( date=date, due_date=due_date, accounting_startdate=accounting_startdate, accounting_enddate=accounting_enddate )
         self.invoices.append( invoice )
@@ -694,7 +696,7 @@ class Contract( Base ):
             session = sqlalchemy.inspect( invoice ).session
             if session:
                 session.expunge( invoice )
-            raise ValueError( "value is zero." )
+            raise InvoiceError( "value is zero" )
         invoice.assign_number()
         return invoice
     def _generateContractRefNumber( self ):
@@ -766,11 +768,34 @@ class Invoice( Base ):
         self.entries.append( entry )
         return entry
     def add_automatic_entries( self ):
-        issues_received = self.contract.get_issues_received( startdate=self.accounting_startdate, enddate=self.accounting_enddate )
-        value = self.contract.price_per_issue * float( len( issues_received ) )
-        for issue in issues_received:
-            desc = "{}, Ausgabe {}/{}".format( issue.magazine.name, issue.number, issue.year )
-            self.add_entry( issue.date, value, desc )
+        dates = []
+        if self.accounting_startdate.year == self.accounting_enddate.year:
+            dates.append( ( self.accounting_startdate, self.accounting_enddate ) )
+        else:
+            year = self.accounting_startdate.year
+            while year <= self.accounting_enddate.year:
+                startdate = datetime.date( year, 1, 1 )
+                if self.accounting_startdate >= startdate:
+                    startdate = self.accounting_startdate
+                enddate = datetime.date( year, 12, 31 )
+                if self.accounting_enddate < enddate:
+                    enddate = self.accounting_enddate
+                dates.append( ( startdate, enddate ) )
+                year += 1
+        for startdate, enddate in dates:
+            num_issues_received = len( self.contract.get_issues_received( startdate=startdate, enddate=enddate ) )
+            num_issues_total = self.contract.subscription.magazine.issues_per_year
+            if num_issues_received == num_issues_total:
+                value = self.contract.value
+            else:
+                ctx = decimal.Context( prec=2, rounding=decimal.ROUND_HALF_EVEN )
+                price_per_issue = ctx.create_decimal( self.contract.price_per_issue )
+                num_issues = ctx.create_decimal( num_issues_received )
+                value = float ( price_per_issue * num_issues )
+                if value == 0:
+                    continue
+            desc = "{}, {}, {} Ausgaben ({} bis {})".format( self.contract.subscription.magazine.name, self.contract.subscription.name, num_issues_received, startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+            self.add_entry( enddate, value, desc )
     def assign_number( self ):
         """Get a new invoice number. The reason why we can't just use the id column is, that invoice numbers need to be ascending *per contract* (according to german law)."""
         if self.number:
