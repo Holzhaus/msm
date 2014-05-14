@@ -145,8 +145,8 @@ class InvoicingAssistant( GObject.GObject ):
         date = datetime.date.today()
         maturity = datetime.timedelta( days=14 )
         accounting_enddate = dateutil.parser.parse( self.builder.get_object( "invoice_accountingenddate_entry" ).get_text(), dayfirst=True ).date()
-        threadobj = ThreadObject( contracts, {"date":date, "maturity":maturity, "accounting_enddate": accounting_enddate}, gui_objects )
-        threadobj.start()
+        self.invoice_generator_threadobj = ThreadObject( contracts, {"date":date, "maturity":maturity, "accounting_enddate": accounting_enddate}, gui_objects )
+        self.invoice_generator_threadobj.start()
     def page_save_prepare_func( self, assistant, page ):
         class ThreadObject( GObject.GObject, threading.Thread ):
             __gsignals__ = {
@@ -181,7 +181,7 @@ class InvoicingAssistant( GObject.GObject ):
         spinner = self.builder.get_object( "save_spinner" )
         label = self.builder.get_object( "save_label" )
         gui_objects = ( spinner, label, assistant, page, self )
-        invoices = self._invoicetable.get_contents()
+        invoices = self.invoice_generator_threadobj.invoices
         InvoicingAssistant.session.expunge_all()
         InvoicingAssistant.session.close()
         threadobj = ThreadObject( invoices, gui_objects )
