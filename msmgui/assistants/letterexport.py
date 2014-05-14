@@ -3,12 +3,8 @@
 from gi.repository import Gtk, GObject, GLib
 import core.database
 import msmgui.widgets.lettercompositor
-import locale
 import datetime
 import threading
-import tempfile
-import os
-from PyPDF2 import PdfFileReader, PdfFileMerger
 from msmgui.widgets.lettercompositor import LetterCompositor
 import sqlalchemy.orm.session
 class LetterExportAssistant( GObject.GObject ):
@@ -71,13 +67,13 @@ class LetterExportAssistant( GObject.GObject ):
             def contract_to_letter( self, contract ):
                 letter = core.pdfgenerator.Letter( contract, date=datetime.date.today() )
                 for letterpart, criterion in self.lettercomposition:
-                    if type( letterpart ) is LetterCompositor.InvoicePlaceholder:
-                        for invoice in contract.invoices:
-                            letter.add_content( invoice )
-                    elif isinstance( letterpart, core.database.Note ):
-                        if criterion is None or criterion == LetterCompositor.Criterion.Always or \
-                        ( criterion == LetterCompositor.Criterion.OnlyOnInvoice and contract.paymenttype == core.database.PaymentType.Invoice ) or \
-                        ( criterion == LetterCompositor.Criterion.OnlyOnDirectWithdrawal and contract.paymenttype == core.database.PaymentType.DirectWithdrawal ):
+                    if criterion is None or criterion == LetterCompositor.Criterion.Always or \
+                    ( criterion == LetterCompositor.Criterion.OnlyOnInvoice and contract.paymenttype == core.database.PaymentType.Invoice ) or \
+                    ( criterion == LetterCompositor.Criterion.OnlyOnDirectWithdrawal and contract.paymenttype == core.database.PaymentType.DirectWithdrawal ):
+                        if type( letterpart ) is LetterCompositor.InvoicePlaceholder:
+                            for invoice in contract.invoices:
+                                letter.add_content( invoice )
+                        elif isinstance( letterpart, core.database.Note ):
                             letter.add_content( letterpart )
                     else:
                         raise RuntimeError( "unknown type: %s", letterpart )
