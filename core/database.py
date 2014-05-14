@@ -527,11 +527,12 @@ class Contract( Base ):
     billingaddress = relationship( Address, primaryjoin=( billingaddress_id == Address.id ) )
     @property
     def price_per_issue( self ):
-        ctx = decimal.Context( prec=2, rounding=decimal.ROUND_HALF_EVEN )
-        val = ctx.create_decimal( self.value )
-        num = ctx.create_decimal( self.subscription.total_number_of_issues )
-        result = val / num
-        return float( result )
+        val = decimal.Decimal( self.value )
+        num = decimal.Decimal( self.subscription.total_number_of_issues )
+        price = val / num
+        step = decimal.Decimal( '.01' )
+        price_rounded = price.quantize( step, decimal.ROUND_HALF_EVEN )
+        return float( price_rounded )
     REFID_SIZE = 6
     REFID_CHECKSUM_SIZE = 2
     REFID_CHARS = string.ascii_uppercase.replace( "O", "" ).replace( "I", "" ) + string.digits.replace( "0", "" )
@@ -782,19 +783,20 @@ class Invoice( Base ):
                     enddate = self.accounting_enddate
                 dates.append( ( startdate, enddate ) )
                 year += 1
+        step = decimal.Decimal( '.01' )
         for startdate, enddate in dates:
             num_issues_received = len( self.contract.get_issues_received( startdate=startdate, enddate=enddate ) )
             num_issues_total = self.contract.subscription.magazine.issues_per_year
             if num_issues_received == num_issues_total:
-                value = self.contract.value
+                value_unrounded = decimal.Decimal( self.contract.value )
             else:
-                ctx = decimal.Context( prec=2, rounding=decimal.ROUND_HALF_EVEN )
-                price_per_issue = ctx.create_decimal( self.contract.price_per_issue )
-                num_issues = ctx.create_decimal( num_issues_received )
-                value = float ( price_per_issue * num_issues )
-                if value == 0:
-                    continue
-            desc = "{}, {}, {} Ausgaben ({} bis {})".format( self.contract.subscription.magazine.name, self.contract.subscription.name, num_issues_received, startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+                price_per_issue = decimal.Decimal( self.contract.price_per_issue )
+                num_issues = decimal.Decimal( num_issues_received )
+                value_unrounded = price_per_issue * num_issues
+            value = float( value_unrounded.quantize( step, decimal.ROUND_HALF_EVEN ) )
+            if value == 0:
+                continue
+            desc = "{}, {}, {} Ausgaben ({} bis {})".format( self.contract.subscription.magazine. name, self.contract.subscription.name, num_issues_received, startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
             self.add_entry( enddate, value, desc )
     def assign_number( self ):
         """Get a new invoice number. The reason why we can't just use the id column is, that invoice numbers need to be ascending *per contract* (according to german law)."""
