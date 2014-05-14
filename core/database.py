@@ -658,20 +658,20 @@ class Contract( Base ):
             if invoice.value_left:
                 invoice.append( invoice )
         return invoice
-    def add_invoice( self, date=datetime.date.today(), due_date=None, maturity=datetime.timedelta( days=14 ), accounting_startdate=None, accounting_enddate=datetime.date.today() ):
+    def add_invoice( self, date=datetime.date.today(), maturity_date=None, maturity=datetime.timedelta( days=14 ), accounting_startdate=None, accounting_enddate=datetime.date.today() ):
         # assume missing values and do some crazy value checking
         if not isinstance( date, datetime.date ):
             raise TypeError( "date has to be of type datetime.date, not {}".format( type( date ).__name__ ) )
-        if due_date is None:
+        if maturity_date is None:
             if maturity is None:
-                raise InvoiceError( "Either due_date or maturity has to be set" )
+                raise InvoiceError( "Either maturity_date or maturity has to be set" )
             elif not isinstance( maturity, datetime.timedelta ):
                 raise InvoiceError( "maturity has to be of type datetime.timedelta, not {}".format( type( maturity ).__name__ ) )
-            due_date = date + maturity
-        elif not isinstance( due_date, datetime.date ):
-            raise TypeError( "due_date has to be of type datetime.date, not {}".format( type( due_date ).__name__ ) )
+            maturity_date = date + maturity
+        elif not isinstance( maturity_date, datetime.date ):
+            raise TypeError( "maturity_date has to be of type datetime.date, not {}".format( type( maturity_date ).__name__ ) )
         if not isinstance( accounting_enddate, datetime.date ):
-            raise TypeError( "accounting_enddate has to be of type datetime.date, not {}".format( type( due_date ).__name__ ) )
+            raise TypeError( "accounting_enddate has to be of type datetime.date, not {}".format( type( maturity_date ).__name__ ) )
         if len( self.invoices ) > 0:
             previous_invoice = self.invoices[-1]
         else:
@@ -689,7 +689,7 @@ class Contract( Base ):
         if accounting_startdate >= accounting_enddate:
             raise InvoiceError( "accounting_startdate has to be earlier than accountig_enddate ({} >= {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), accounting_enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
         # Now we can continue as everything should be fine now
-        invoice = Invoice( date=date, due_date=due_date, accounting_startdate=accounting_startdate, accounting_enddate=accounting_enddate )
+        invoice = Invoice( date=date, maturity_date=maturity_date, accounting_startdate=accounting_startdate, accounting_enddate=accounting_enddate )
         self.invoices.append( invoice )
         invoice.add_automatic_entries()
         if invoice.value == 0:
@@ -740,7 +740,7 @@ class Invoice( Base ):
     accounting_startdate = Column( Date, nullable=False )
     accounting_enddate = Column( Date, nullable=False )
     date = Column( Date, nullable=False )
-    due_date = Column( Date, nullable=False )
+    maturity_date = Column( Date, nullable=False )
     number = Column( Integer )
     contract = relationship( Contract, backref=backref( 'invoices', order_by=date, cascade="all, delete" ) )
     entries = relationship( BookkeepingEntry, secondary=association_table, backref="invoices", cascade="all, delete" )
