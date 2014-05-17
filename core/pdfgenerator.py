@@ -183,11 +183,13 @@ class LetterRenderer:
     def _render_invoice( generic_templatevars, invoice ):
         invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
         templatevars = generic_templatevars.copy()
-        templatevars.update( {'invoice_no': invoice_no,
-                             'subject':'Rechnung Nr. %s' % invoice_no,
-                             'subscription_name':invoice.contract.subscription.name,
-                             'magazine_name':invoice.contract.subscription.magazine.name,
-                             'total':locale.currency( invoice.value_left )} )
+        templatevars.update( { 'invoice_no': invoice_no,
+                               'subject':'Rechnung Nr. %s' % invoice_no,
+                               'subscription_name':invoice.contract.subscription.name,
+                               'magazine_name':invoice.contract.subscription.magazine.name,
+                               'total':locale.currency( invoice.value_left ),
+                               'maturity_date': invoice.maturity_date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+                             } )
         entries = []
         for i, entry in enumerate( invoice.entries ):
             entries.append( {'position':str( i + 1 ),
