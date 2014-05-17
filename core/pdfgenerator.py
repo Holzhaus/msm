@@ -11,6 +11,7 @@ import locale
 import core.database
 import threading
 import datetime
+from core.errors import LatexError
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
@@ -40,8 +41,6 @@ template_env.comment_end_string = '=))'
 template_env.filters['escape_tex'] = escape_tex
 template_env.filters['escape_nl'] = escape_nl
 class PdfGenerator():
-    class LatexError( Exception ):
-        pass
     @staticmethod
     def latexstr_to_pdf( latexstr, output_file='/tmp/output.pdf' ):
         f = tempfile.NamedTemporaryFile( delete=False )
@@ -63,9 +62,9 @@ class PdfGenerator():
                    '-jobname', jobname,
                    '-output-directory', tmpdirname,
                    latexfile]
-            latex = subprocess.call( cmd, env=env ) # , stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
+            latex = subprocess.call( cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
             if latex != 0:
-                raise PdfGenerator.LatexError()
+                raise LatexError()
             tmp_uri = os.path.join( tmpdirname, '%s.pdf' % jobname )
             shutil.copy( tmp_uri, output_file )
 class Letter:
@@ -177,6 +176,8 @@ class LetterRenderer:
             rendered_text = LetterRenderer._render_invoice( templatevars, obj )
         elif isinstance( obj, core.database.Note ):
             rendered_text = LetterRenderer._render_note( templatevars, obj )
+        else:
+            raise TypeError( "Unknown letter part type" )
         return rendered_text
     @staticmethod
     def _render_invoice( generic_templatevars, invoice ):
