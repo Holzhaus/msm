@@ -4,7 +4,6 @@ from gi.repository import Gtk, GObject
 import locale
 import dateutil.parser
 import core.database
-import msmgui.widgets.customereditor
 import msmgui.rowreference
 class ContractRowReference( msmgui.rowreference.GenericRowReference ):
     def get_contract( self ):
@@ -20,7 +19,7 @@ class ContractEditor( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    def __init__( self ):
+    def __init__( self, session ):
         Gtk.Box.__init__( self )
         self._customer = None
         self.signals_blocked = True
@@ -40,8 +39,7 @@ class ContractEditor( Gtk.Box ):
         self.builder.get_object( "contracts_bankaccount_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "contracts_directwithdrawal_cellrenderertoggle" ), self.directwithdrawal_cell_data_func )
         self.builder.get_object( "contracts_bankaccount_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "contracts_bankaccount_cellrenderercombo" ), self.bankaccount_cell_data_func )
 
-        if msmgui.widgets.customereditor.CustomerEditor.session is None:
-            raise RuntimeError( "Can't init BankaccountEditor without a session!" )
+        self._session = session
     def add_contract( self, contract ):
         """Add a contract to the Gtk.Treemodel"""
         model = self.builder.get_object( "contracts_liststore" )
@@ -53,13 +51,13 @@ class ContractEditor( Gtk.Box ):
         if not isinstance( rowref, ContractRowReference ):
             raise TypeError( "Expected ContractRowReference, not {}".format( type( rowref ).__name__ ) )
         contract = rowref.get_contract()
-        if contract not in msmgui.widgets.customereditor.CustomerEditor.session().new:
-            msmgui.widgets.customereditor.CustomerEditor.session().delete( contract )
+        if contract not in self._session.new:
+            self._session.delete( contract )
         if contract in self._customer.contracts:
             self._customer.contracts.remove( contract )
         model = rowref.get_model()
         treeiter = rowref.get_iter()
-        model.remove( treeiter )  # Remove row from table
+        model.remove( treeiter ) # Remove row from table
     def _gui_clear( self ):
         self.builder.get_object( "contracts_liststore" ).clear()
     def _gui_fill( self ):
@@ -197,7 +195,7 @@ class ContractEditor( Gtk.Box ):
         if self.signals_blocked: return
         model = self.builder.get_object( "subscriptions_treestore" )
         model.clear()
-        for magazine in core.database.Magazine.get_all( session=msmgui.widgets.customereditor.CustomerEditor.session ):
+        for magazine in core.database.Magazine.get_all( session=self._session ):
             treeiter = model.append( None, [magazine, ""] )
             for subscription in magazine.subscriptions:
                 model.append( treeiter, [subscription, ""] )

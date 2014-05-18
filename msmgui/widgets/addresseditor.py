@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
 import core.database
-import msmgui.widgets.customereditor
 import msmgui.rowreference
 class AddressRowReference( msmgui.rowreference.GenericRowReference ):
     def get_address( self ):
@@ -18,7 +17,7 @@ class AddressEditor( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    def __init__( self ):
+    def __init__( self, session ):
         Gtk.Box.__init__( self )
         self.signals_blocked = True
         self._customer = None
@@ -33,8 +32,8 @@ class AddressEditor( Gtk.Box ):
         self.builder.get_object( "addresses_zipcode_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_zipcode_cellrenderertext" ), self.zipcode_cell_data_func )
         self.builder.get_object( "addresses_city_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_city_cellrenderertext" ), self.city_cell_data_func )
         self.builder.get_object( "addresses_co_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_co_cellrenderertext" ), self.co_cell_data_func )
-        if msmgui.widgets.customereditor.CustomerEditor.session is None:
-            raise RuntimeError( "Can't init AddressEditor without a session!" )
+        # Store reference to the session
+        self._session = session
     def add_address( self, address ):
         """Add an address to the Gtk.Treemodel"""
         model = self.builder.get_object( "addresses_liststore" )
@@ -48,13 +47,13 @@ class AddressEditor( Gtk.Box ):
             raise TypeError( "Expected AddressRowReference, not {}".format( type( rowref ).__name__ ) )
         address = rowref.get_address()
         # TODO: Check if address is currently in use
-        if address not in msmgui.widgets.customereditor.CustomerEditor.session().new:
-            msmgui.widgets.customereditor.CustomerEditor.session().delete( address )
+        if address not in self._session.new:
+            self._session.delete( address )
         if address in self._customer.addresses:
             self._customer.addresses.remove( address )
         model = rowref.get_model()
         treeiter = rowref.get_iter()
-        model.remove( treeiter )  # Remove row from table
+        model.remove( treeiter ) # Remove row from table
         self.emit( "changed" )
     def _gui_clear( self ):
         self.builder.get_object( "addresses_liststore" ).clear()

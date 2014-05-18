@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
 import core.database
-import msmgui.widgets.customereditor
 import msmgui.rowreference
 class BankaccountRowReference( msmgui.rowreference.GenericRowReference ):
     def get_bankaccount( self ):
@@ -18,7 +17,7 @@ class BankaccountEditor( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    def __init__( self ):
+    def __init__( self, session ):
         Gtk.Box.__init__( self )
         self._customer = None
         self.signals_blocked = True
@@ -34,8 +33,7 @@ class BankaccountEditor( Gtk.Box ):
         self.builder.get_object( "bankaccounts_bank_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "bankaccounts_bank_cellrenderertext" ), self.bank_cell_data_func )
         self.builder.get_object( "bankaccounts_owner_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "bankaccounts_owner_cellrenderertext" ), self.owner_cell_data_func )
 
-        if msmgui.widgets.customereditor.CustomerEditor.session is None:
-            raise RuntimeError( "Can't init BankaccountEditor without a session!" )
+        self._session = session
     def add_bankaccount( self, bankaccount ):
         """Add a bankaccount to the Gtk.Treemodel"""
         model = self.builder.get_object( "bankaccounts_liststore" )
@@ -48,13 +46,13 @@ class BankaccountEditor( Gtk.Box ):
             raise TypeError( "Expected BankaccountRowReference, not {}".format( type( rowref ).__name__ ) )
         bankaccount = rowref.get_bankaccount()
         # TODO: Check if bankaccount is currently in use
-        if bankaccount not in msmgui.widgets.customereditor.CustomerEditor.session().new:
-            msmgui.widgets.customereditor.CustomerEditor.session().delete( bankaccount )
+        if bankaccount not in self._session.new:
+            self._session.delete( bankaccount )
         if bankaccount in self._customer.bankaccount:
             self._customer.bankaccounts.remove( bankaccount )
         model = rowref.get_model()
         treeiter = rowref.get_iter()
-        model.remove( treeiter )  # Remove row from table
+        model.remove( treeiter ) # Remove row from table
     def _gui_clear( self ):
         self.builder.get_object( "bankaccounts_liststore" ).clear()
     def _gui_fill( self ):

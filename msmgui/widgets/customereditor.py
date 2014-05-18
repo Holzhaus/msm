@@ -3,7 +3,7 @@
 from gi.repository import Gtk, GObject
 import core.database
 from msmgui.widgets.addresseditor import AddressEditor
-#from msmgui.widgets.balanceeditor import BalanceEditor
+# from msmgui.widgets.balanceeditor import BalanceEditor
 from msmgui.widgets.bankaccounteditor import BankaccountEditor
 from msmgui.widgets.contracteditor import ContractEditor
 import dateutil
@@ -17,7 +17,6 @@ class CustomerEditor( Gtk.Box ):
         'save': ( GObject.SIGNAL_RUN_FIRST, None, ( int, bool ) ),
         'expanded-changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    session = None
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
         return self
@@ -34,22 +33,22 @@ class CustomerEditor( Gtk.Box ):
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals
-        #FIXME I'd like to use self.builder.connect_signals( self ), but unless this method returns the handler_ids for the connected signals, I have to connect them manually
+        # FIXME I'd like to use self.builder.connect_signals( self ), but unless this method returns the handler_ids for the connected signals, I have to connect them manually
         self.builder.connect_signals( self )
-        CustomerEditor.session = core.database.Database.get_scoped_session( self._scopefunc )
+        self._session = core.database.Database.get_scoped_session( self._scopefunc )
 
         # Add child widgets
-        self._addresseditor = AddressEditor()
+        self._addresseditor = AddressEditor( self._session )
         self.builder.get_object( "addresseditorbox" ).add( self._addresseditor )
-        #self._balanceeditor = BalanceEditor()
-        #self.builder.get_object( "balanceeditorbox" ).add( self._balanceeditor )
-        self._bankaccounteditor = BankaccountEditor()
+        # self._balanceeditor = BalanceEditor()
+        # self.builder.get_object( "balanceeditorbox" ).add( self._balanceeditor )
+        self._bankaccounteditor = BankaccountEditor( self._session )
         self.builder.get_object( "bankaccounteditorbox" ).add( self._bankaccounteditor )
-        self._contracteditor = ContractEditor()
+        self._contracteditor = ContractEditor( self._session )
         self.builder.get_object( "contracteditorbox" ).add( self._contracteditor )
 
         self._addresseditor.connect( "changed", self.check_changes )
-        #self._balanceeditor.connect( "changed", self.check_changes )
+        # self._balanceeditor.connect( "changed", self.check_changes )
         self._bankaccounteditor.connect( "changed", self.check_changes )
         self._contracteditor.connect( "changed", self.check_changes )
 
@@ -59,23 +58,23 @@ class CustomerEditor( Gtk.Box ):
         self.builder.get_object( 'customers_edit_contracts_value_treeviewcolumn' ).set_cell_data_func( self.builder.get_object( 'customers_edit_contracts_value_cellrendererspin' ), signalhandler.customers_edit_contracts_value_cellrendererspin_edited_func )"""
     def start_edit( self, customer_id=None ):
         if not self.end_edit():
-            #FIXME This will never happen, as end_edit cannot be canceled right now
+            # FIXME This will never happen, as end_edit cannot be canceled right now
             return False
         if customer_id:
             existing_customer = core.database.Customer.get_by_id( customer_id )
             if not existing_customer:
                 raise Exception( "Customer ID not found" )
-            customer = CustomerEditor.session().merge( existing_customer, load=False )
+            customer = self._session.merge( existing_customer, load=False )
             self.expandable = True
         else:
             customer = core.database.Customer( "", "" )
-            CustomerEditor.session().add( customer )
+            self._session.add( customer )
             self.expanded = True
             self.expandable = False
         self._customer = customer
         self.signals_blocked = True
         self._addresseditor.start_edit( self._customer )
-        #self._balanceeditor.start_edit( self._customer )
+        # self._balanceeditor.start_edit( self._customer )
         self._bankaccounteditor.start_edit( self._customer )
         self._contracteditor.start_edit( self._customer )
         self.signals_blocked = False
@@ -89,46 +88,46 @@ class CustomerEditor( Gtk.Box ):
             else:
                 print( "Data is invalid" )
                 return False
-            #FIXME Maybe it's better to check the response here and add a cancel button
-        CustomerEditor.session.remove()
+            # FIXME Maybe it's better to check the response here and add a cancel button
+        self._session.remove()
         self._gui_clear()
         self.emit( "edit-ended" )
         return True
     def reset( self ):
         customer_id = self._customer.id
-        CustomerEditor.session().rollback()
+        self._session.rollback()
         self.emit( "reset" )
         self.end_edit()
         self.start_edit( customer_id )
     def save( self ):
-        #TODO Do some multithreading here
-        is_new = True if self._customer in CustomerEditor.session().new else False
-        CustomerEditor.session().commit()
+        # TODO Do some multithreading here
+        is_new = True if self._customer in self._session.new else False
+        self._session.commit()
         self.emit( "save", self._customer.id, is_new )
     def has_changes( self ):
-        if CustomerEditor.session().deleted:
+        if self._session.deleted:
             return True
-        for obj in CustomerEditor.session().new:
+        for obj in self._session.new:
             if obj is not self._customer:
-                return True  # you added an address, bankaccount, etc. to this customer
+                return True # you added an address, bankaccount, etc. to this customer
             elif self._customer != core.database.Customer( "", "" ):
-                return True  # you're creating a new customer and already entered some values
-        for obj in CustomerEditor.session().dirty:
-            if CustomerEditor.session().is_modified( obj ):  # session.dirty is "optimistic", so we check if the object was really modified
-                return True  # you changed the properties of this customer
-        """if core.database.session_has_pending_commit( CustomerEditor.session() ):
+                return True # you're creating a new customer and already entered some values
+        for obj in self._session.dirty:
+            if self._session.is_modified( obj ): # session.dirty is "optimistic", so we check if the object was really modified
+                return True # you changed the properties of this customer
+        """if core.database.session_has_pending_commit( self._session ):
             return True  # you already flushed some changes to the database"""
         return False
     def data_is_valid( self ):
-        for obj in ( list( CustomerEditor.session().new ) + list( CustomerEditor.session().dirty ) ):
+        for obj in ( list( self._session.new ) + list( self._session.dirty ) ):
             if not obj.is_valid():
                 return False
             if isinstance( obj, core.database.Contract ):
-                if obj.bankaccount in CustomerEditor.session().deleted:
+                if obj.bankaccount in self._session.deleted:
                     return False
-                if obj.shippingaddress in CustomerEditor.session().deleted:
+                if obj.shippingaddress in self._session.deleted:
                     return False
-                if obj.billingaddress in CustomerEditor.session().deleted:
+                if obj.billingaddress in self._session.deleted:
                     return False
         return True
     def prompt_changes( self ):
@@ -152,7 +151,7 @@ class CustomerEditor( Gtk.Box ):
             raise ValueError
         self._gui_signals_blocked = value
         self._addresseditor.signals_blocked = value
-        #self._balanceeditor.signals_blocked = value
+        # self._balanceeditor.signals_blocked = value
         self._bankaccounteditor.signals_blocked = value
         self._contracteditor.signals_blocked = value
     @property
@@ -198,7 +197,7 @@ class CustomerEditor( Gtk.Box ):
     def _gui_clear( self ):
         self.signals_blocked = True
         self._addresseditor._gui_clear()
-        #self._balanceeditor._gui_clear()
+        # self._balanceeditor._gui_clear()
         self._bankaccounteditor._gui_clear()
         self._contracteditor._gui_clear()
 
@@ -229,7 +228,7 @@ class CustomerEditor( Gtk.Box ):
         self.builder.get_object( 'company2_entry' ).set_text( self._customer.company2 if self._customer.company2 else "" )
         self.builder.get_object( 'department_entry' ).set_text( self._customer.department if self._customer.department else "" )
         self._addresseditor._gui_fill()
-        #self._balanceeditor._gui_fill()
+        # self._balanceeditor._gui_fill()
         self._bankaccounteditor._gui_fill()
         self._contracteditor._gui_fill()
 
