@@ -13,7 +13,7 @@ class AboutDialog( object ):
         self.builder.connect_signals( self )
         self.hide()
     def show( self ):
-        self.builder.get_object( "content" ).show()
+        self.builder.get_object( "content" ).run()
     def hide( self ):
         self.builder.get_object( "content" ).hide()
     """Callbacks"""
