@@ -15,7 +15,7 @@ anbei finden Sie die Rechnung für das ((( subscription_name|escape_tex|escape_n
 \multicolumn{2}{|r|}{\textbf{Gesamtbetrag}} & ((( total|escape_tex|escape_nl )))\\\hline
 \end{tabularx}
 
-Bitte überweisen Sie den oben genannten Betrag mit dem Verwendungszweck \emph{ ((( invoice_no|escape_tex|escape_nl ))) } bis zum ((( maturity_date|escape_tex|escape_nl ))) auf das angegebene Konto.
+\begin{sloppypar}Bitte überweisen Sie den oben genannten Betrag mit dem Verwendungszweck \emph{(((invoice_no|escape_tex|escape_nl)))} bis zum (((maturity_date|escape_tex|escape_nl))) auf das angegebene Konto.\end{sloppypar}
 
 \closing{((( closing|escape_tex|escape_nl ))),}
 \end{letter}
