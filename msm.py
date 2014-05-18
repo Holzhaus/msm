@@ -84,7 +84,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
             parameter:
                 the parameter to the activation
         """
-        if self.mainwindow.customereditor.endEdit():
+        if self.mainwindow.customereditor.end_edit():
             Gtk.main_quit()
             sys.exit()
 
