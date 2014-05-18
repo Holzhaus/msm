@@ -19,7 +19,6 @@ class MagazineManager( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    session = None
     DEFAULT_SUBSCRIPTION_NAME = "Neues Abo"
     DEFAULT_SUBSCRIPTION_VALUE = 10
     DEFAULT_MAGAZINE_NAME = "Neues Magazin"
@@ -41,13 +40,13 @@ class MagazineManager( Gtk.Box ):
         self.builder.get_object( "subscription_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "subscription_cellrenderertext" ), self.subscription_cell_data_func )
         if not session:
             session = core.database.Database.get_scoped_session( self._scopefunc )
-        MagazineManager.session = session
-        if MagazineManager.session is None:
+        self._session = session
+        if self._session is None:
             raise RuntimeError( "Can't init MagazineManager without a session!" )
         # Add Child Widgets
-        self._magazineeditor = MagazineEditor( session=MagazineManager.session )
+        self._magazineeditor = MagazineEditor( session=self._session )
         self.builder.get_object( "magazine_page" ).add( self._magazineeditor )
-        self._subscriptioneditor = SubscriptionEditor( session=MagazineManager.session )
+        self._subscriptioneditor = SubscriptionEditor( session=self._session )
         self.builder.get_object( "subscription_page" ).add( self._subscriptioneditor )
         self.signals_blocked = False
     def add_magazine( self, magazine ):
@@ -71,10 +70,10 @@ class MagazineManager( Gtk.Box ):
             raise TypeError( "Expected MagazineManagerRowReference, not {}".format( type( rowref ).__name__ ) )
         magazine = rowref.get_magazine()
         # TODO: Check if magazine is currently in use
-        if magazine in MagazineManager.session.new:
-            MagazineManager.session.remove( magazine )
+        if magazine in self._session.new:
+            self._session.remove( magazine )
         else:
-            MagazineManager.session.delete( magazine )
+            self._session.delete( magazine )
         model = rowref.get_model()
         treeiter = rowref.get_iter()
         model.remove( treeiter ) # Remove row from table
@@ -83,7 +82,7 @@ class MagazineManager( Gtk.Box ):
         self.builder.get_object( "subscriptions_treestore" ).clear()
     def _gui_fill( self ):
         self._gui_clear()
-        for magazine in core.database.Magazine.get_all( session=MagazineManager.session ):
+        for magazine in core.database.Magazine.get_all( session=self._session ):
             self.add_magazine( magazine )
     def start_edit( self ):
         self._gui_fill()
@@ -102,7 +101,7 @@ class MagazineManager( Gtk.Box ):
     def magazines_add_button_clicked_cb( self, button ):
         if self.signals_blocked: return
         magazine = core.database.Magazine( MagazineManager.DEFAULT_MAGAZINE_NAME, MagazineManager.DEFAULT_MAGAZINE_ISSUENUM )
-        MagazineManager.session().add( magazine )
+        self._session.add( magazine )
         self.add_magazine( magazine )
         self.emit( "changed" )
     def subscriptions_add_button_clicked_cb( self, button ):
@@ -171,7 +170,6 @@ class MagazineEditor( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    session = None
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
         return self
@@ -191,8 +189,8 @@ class MagazineEditor( Gtk.Box ):
         self.builder.get_object( "issues_year_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "issues_year_cellrenderertext" ), self.issues_year_cell_data_func )
         if not session:
             session = core.database.Database.get_scoped_session( self._scopefunc )
-        MagazineEditor.session = session
-        if MagazineEditor.session is None:
+        self._session = session
+        if self._session is None:
             raise RuntimeError( "Can't init MagazineEditor without a session!" )
     def add_issue( self, issue ):
         """Add an issue to the Gtk.Treemodel"""
@@ -285,7 +283,6 @@ class SubscriptionEditor( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    session = None
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
         return self
@@ -302,8 +299,8 @@ class SubscriptionEditor( Gtk.Box ):
         self.builder.connect_signals( self )
         if not session:
             session = core.database.Database.get_scoped_session( self._scopefunc )
-        SubscriptionEditor.session = session
-        if SubscriptionEditor.session is None:
+        self._session = session
+        if self._session is None:
             raise RuntimeError( "Can't init SubscriptionEditor without a session!" )
     def _gui_fill( self ):
         self.signals_blocked = True
