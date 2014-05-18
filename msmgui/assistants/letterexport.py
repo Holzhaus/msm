@@ -14,7 +14,6 @@ class LetterExportAssistant( GObject.GObject ):
         """
         Intro, Compose, Confirm, Render, Summary = range( 5 )
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
-    session = None
     def _scopefunc( self ):
         """
         Needed as scopefunc argument for the scoped_session
@@ -22,7 +21,7 @@ class LetterExportAssistant( GObject.GObject ):
         return self
     def __init__( self ):
         GObject.GObject.__init__( self )
-        LetterExportAssistant.session = core.database.Database.get_scoped_session( self._scopefunc )
+        self._session = core.database.Database.get_scoped_session( self._scopefunc )
         # Build GUI
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/assistants/letterexport.glade" )
@@ -136,9 +135,9 @@ class LetterExportAssistant( GObject.GObject ):
         spinner = self.builder.get_object( "render_spinner" )
         label = self.builder.get_object( "render_label" )
         gui_objects = ( spinner, label, assistant, page )
-        LetterExportAssistant.session.close()
-        contracts = core.database.Contract.get_all( session=LetterExportAssistant.session ) # We expunge everything, use it inside the thread and readd it later
-        LetterExportAssistant.session.expunge_all()
+        self._session.close()
+        contracts = core.database.Contract.get_all( session=self._session ) # We expunge everything, use it inside the thread and readd it later
+        self._session.expunge_all()
         lettercomposition = []
         for letterpart, criterion in self._lettercompositor.get_composition():
             if isinstance( letterpart, core.database.Note ):
@@ -168,8 +167,8 @@ class LetterExportAssistant( GObject.GObject ):
             assistant:
                 the Gtk.Assistant that emitted the signal
         """
-        LetterExportAssistant.session.rollback()
-        LetterExportAssistant.session.close()
+        self._session.rollback()
+        self._session.close()
     def close_cb( self, assistant ):
         """
         Callback for the "close"-signal of the Gtk.Assistant.
