@@ -8,6 +8,10 @@
 \usepackage{eso-pic}
 \usepackage{verbatimbox}
 \usepackage{tabularx}
+% Fix spacing before and after tabularx
+\let\oldtabularx\tabularx
+\let\endoldtabularx\endtabularx
+\renewenvironment{tabularx}{\vspace{5mm}\oldtabularx}{\endoldtabularx\vspace{5mm}}
 \begin{document}
 ((* for prerendered_letter in prerendered_letters *))
 ((( prerendered_letter )))
