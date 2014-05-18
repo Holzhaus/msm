@@ -11,7 +11,9 @@ class LetterExportAssistant( GObject.GObject ):
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
     session = None
     def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
+        """
+        Needed as scopefunc argument for the scoped_session
+        """
         return self
     def __init__( self ):
         GObject.GObject.__init__( self )
@@ -29,18 +31,37 @@ class LetterExportAssistant( GObject.GObject ):
         # Connect Signals
         self.builder.connect_signals( self )
     def set_parent( self, parent ):
+        """
+        Sets the assistants parent window. Internally calls Gtk.Assistant.set_transient_for(parent).
+        Arguments:
+            parent:
+                the assistant's parent window
+        """
         self._assistant.set_transient_for( parent )
     def show( self ):
+        """
+        Shows the LetterExportAssistant.
+        """
         self.builder.get_object( "content" ).show_all()
     class Page:
-        """ Page Enum """
+        """
+        Enumeration of LetterExportAssistants pages.
+        """
         Intro, Compose, Confirm, Render, Summary = range( 5 )
     def lettercompositor_changed_cb( self, lettercompositor, has_contents ):
+        """
+        Callback function for the LetterCompositor "changed" signal.
+        Arguments:
+            lettercompositor:
+                the calling LetterCompositor widget
+            has_contents:
+                True if the lettercomposition contains items, else False
+        """
         page = self._assistant.get_nth_page( LetterExportAssistant.Page.Compose )
         self._assistant.set_page_complete( page, has_contents )
     def page_forward_func( self, page ):
         """
-        Function called when the forward button is pressed,
+        Function called when the forward button is pressed.
         Arguments:
             page:
                 integer index of the current page
@@ -52,6 +73,14 @@ class LetterExportAssistant( GObject.GObject ):
     Page prepare funcs
     """
     def page_render_prepare_func( self, assistant, page ):
+        """
+        Starts the letter rendering thread.
+        Arguments:
+            assistant:
+                the calling Gtk.Assistant
+            page:
+                current page of the assistant
+        """
         class ThreadObject( GObject.GObject, threading.Thread ):
             __gsignals__ = {
                         'start': ( GObject.SIGNAL_RUN_FIRST, None, () ),
