@@ -41,10 +41,6 @@ class MagazineSubscriptionManager( Gtk.Application ):
         settings_action.connect( "activate", self.settings_cb )
         self.add_action( settings_action )
 
-        cleardata_action = Gio.SimpleAction.new( "cleardata", None )
-        cleardata_action.connect( "activate", self.cleardata_cb )
-        self.add_action( cleardata_action )
-
         quit_action = Gio.SimpleAction.new( "quit", None )
         quit_action.connect( "activate", self.quit_cb )
         self.add_action( quit_action )
@@ -53,8 +49,6 @@ class MagazineSubscriptionManager( Gtk.Application ):
     """Callbacks for AppMenu Actions"""
     def settings_cb( self, action, parameter ):
         self._preferencesdialog.show()
-    def cleardata_cb( self, action, parameter ):
-        pass
     def quit_cb( self, action, parameter ):
         if self.mainwindow.customereditor.endEdit():
             Gtk.main_quit()
