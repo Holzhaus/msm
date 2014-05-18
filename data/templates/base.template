@@ -3,8 +3,11 @@
 \usepackage[utf8]{inputenc}
 \usepackage{marvosym}
 \DeclareUnicodeCharacter{20AC}{\EUR{}}
-\usepackage{graphicx,xcolor,eso-pic,tabularx}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{eso-pic}
 \usepackage{verbatimbox}
+\usepackage{tabularx}
 \begin{document}
 ((* for prerendered_letter in prerendered_letters *))
 ((( prerendered_letter )))
