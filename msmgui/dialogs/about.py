@@ -3,6 +3,12 @@
 from gi.repository import Gtk
 class AboutDialog( object ):
     def __init__( self, parent ):
+        """
+        __init__ function.
+        Arguments:
+            parent:
+                the parent window of this dialog.
+        """
         self._parent = parent
         # Build GUI
         self.builder = Gtk.Builder()
@@ -13,11 +19,33 @@ class AboutDialog( object ):
         self.builder.connect_signals( self )
         self.hide()
     def show( self ):
+        """
+        Shows the dialog.
+        """
         self.builder.get_object( "content" ).run()
     def hide( self ):
+        """
+        Hides the dialog.
+        """
         self.builder.get_object( "content" ).hide()
-    """Callbacks"""
+    # Callbacks
     def aboutdialog_close_cb( self, aboutdialog ):
+        """
+        Callback function for the "close" signal of the dialog.
+        Hides the dialog.
+        Arguments:
+            aboutdialog:
+                the AboutDialog that emitted the signal.
+        """
         self.hide()
     def aboutdialog_response_cb( self, aboutdialog, response ):
+        """
+        Callback function for the "response" signal of the dialog.
+        Hides the dialog.
+        Arguments:
+            aboutdialog:
+                the AboutDialog that emitted the signal.
+            response:
+                the response of the dialog.
+        """
         self.hide()
