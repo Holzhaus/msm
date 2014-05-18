@@ -48,7 +48,7 @@ class BankaccountEditor( Gtk.Box ):
         # TODO: Check if bankaccount is currently in use
         if bankaccount not in self._session.new:
             self._session.delete( bankaccount )
-        if bankaccount in self._customer.bankaccount:
+        if bankaccount in self._customer.bankaccounts:
             self._customer.bankaccounts.remove( bankaccount )
         model = rowref.get_model()
         treeiter = rowref.get_iter()
