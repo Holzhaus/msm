@@ -62,9 +62,12 @@ class PdfGenerator():
                    '-jobname', jobname,
                    '-output-directory', tmpdirname,
                    latexfile]
-            latex = subprocess.call( cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT )
-            if latex != 0:
-                raise LatexError()
+            with tempfile.TemporaryFile() as out:
+                latex = subprocess.call( cmd, env=env, stdout=out, stderr=subprocess.STDOUT )
+                if latex != 0:
+                    out.seek( 0 )
+                    print( out.read().decode( "utf-8" ) )
+                    raise LatexError()
             tmp_uri = os.path.join( tmpdirname, '%s.pdf' % jobname )
             shutil.copy( tmp_uri, output_file )
 class Letter:
