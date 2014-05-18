@@ -8,6 +8,11 @@ import threading
 from msmgui.widgets.lettercompositor import LetterCompositor
 import sqlalchemy.orm.session
 class LetterExportAssistant( GObject.GObject ):
+    class Page:
+        """
+        Enumeration of LetterExportAssistants pages.
+        """
+        Intro, Compose, Confirm, Render, Summary = range( 5 )
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
     session = None
     def _scopefunc( self ):
@@ -43,22 +48,6 @@ class LetterExportAssistant( GObject.GObject ):
         Shows the LetterExportAssistant.
         """
         self.builder.get_object( "content" ).show_all()
-    class Page:
-        """
-        Enumeration of LetterExportAssistants pages.
-        """
-        Intro, Compose, Confirm, Render, Summary = range( 5 )
-    def lettercompositor_changed_cb( self, lettercompositor, has_contents ):
-        """
-        Callback function for the LetterCompositor "changed" signal.
-        Arguments:
-            lettercompositor:
-                the calling LetterCompositor widget
-            has_contents:
-                True if the lettercomposition contains items, else False
-        """
-        page = self._assistant.get_nth_page( LetterExportAssistant.Page.Compose )
-        self._assistant.set_page_complete( page, has_contents )
     def page_forward_func( self, page ):
         """
         Function called when the forward button is pressed.
@@ -69,9 +58,7 @@ class LetterExportAssistant( GObject.GObject ):
             integer index of the next page to display
         """
         return page + 1
-    """
-    Page prepare funcs
-    """
+    # Page prepare funcs
     def page_render_prepare_func( self, assistant, page ):
         """
         Starts the letter rendering thread.
@@ -125,8 +112,8 @@ class LetterExportAssistant( GObject.GObject ):
                 for i, prerendered_letter in enumerate( core.pdfgenerator.LetterRenderer.prerender( letters ) ):
                     prerendered_letters.append( prerendered_letter )
                     if i % 100 == 0:
-                         text = "Prerendering ({}/{})".format( i, num_letters )
-                         GLib.idle_add( self._gui_update, text )
+                        text = "Prerendering ({}/{})".format( i, num_letters )
+                        GLib.idle_add( self._gui_update, text )
                 output_file = "/tmp/exporttest.pdf"
                 GLib.idle_add( self._gui_update, "Finales Rendering..." )
                 core.pdfgenerator.LetterRenderer.render_prerendered_letters( prerendered_letters, output_file )
@@ -161,19 +148,59 @@ class LetterExportAssistant( GObject.GObject ):
             lettercomposition.append( ( letterpart, criterion ) )
         threadobj = ThreadObject( lettercomposition, contracts, gui_objects )
         threadobj.start()
-    """
-    Callbacks
-    """
+    # Callbacks
+    def lettercompositor_changed_cb( self, lettercompositor, has_contents ):
+        """
+        Callback function for the LetterCompositor "changed" signal.
+        Arguments:
+            lettercompositor:
+                the LetterCompositor widget that emitted the signal
+            has_contents:
+                True if the lettercomposition contains items, else False
+        """
+        page = self._assistant.get_nth_page( LetterExportAssistant.Page.Compose )
+        self._assistant.set_page_complete( page, has_contents )
     def hide_cb( self, assistant ):
+        """
+        Callback for the "hide"-signal of the Gtk.Assistant.
+        Rolls back and closes the database session.
+        Arguments:
+            assistant:
+                the Gtk.Assistant that emitted the signal
+        """
         LetterExportAssistant.session.rollback()
         LetterExportAssistant.session.close()
     def close_cb( self, assistant ):
+        """
+        Callback for the "close"-signal of the Gtk.Assistant.
+        Hides the assistant.
+        Arguments:
+            assistant:
+                the Gtk.Assistant that emitted the signal
+        """
         assistant.hide()
     def cancel_cb( self, assistant ):
+        """
+        Callback for the "cancel"-signal of the Gtk.Assistant.
+        Hides the assistant.
+        Arguments:
+            assistant:
+                the Gtk.Assistant that emitted the signal
+        """
         assistant.hide()
     def apply_cb( self, assistant ):
+        # FIXME: What to do here?
         pass
     def prepare_cb( self, assistant, page ):
+        """
+        Callback for the "prepare"-signal of the Gtk.Assistant.
+        Calls the prepare_func for the respective page, if neccessary.
+        Arguments:
+            assistant:
+                the Gtk.Assistant that emitted the signal
+            page:
+                the assistant's page to be prepared
+        """
         if page == assistant.get_nth_page( LetterExportAssistant.Page.Intro ):
             assistant.set_page_complete( page, True )
         elif page == assistant.get_nth_page( LetterExportAssistant.Page.Render ):
