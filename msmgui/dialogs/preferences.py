@@ -16,7 +16,7 @@ class PreferencesDialog( object ):
                 the parent window of this dialog.
         """
         self._parent = parent
-        PreferencesDialog.session = core.database.Database.get_scoped_session( self._scopefunc )
+        self._session = core.database.Database.get_scoped_session( self._scopefunc )
         # Build GUI
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/dialogs/preferences.glade" )
@@ -25,7 +25,7 @@ class PreferencesDialog( object ):
         # Connect Signals
         self.builder.connect_signals( self )
         # Add child widgets
-        self._magazinemanager = MagazineManager( session=PreferencesDialog.session )
+        self._magazinemanager = MagazineManager( session=self._session )
         self.builder.get_object( "magazineeditorbox" ).add( self._magazinemanager )
     def show( self ):
         """
@@ -109,7 +109,7 @@ class PreferencesDialog( object ):
         if response == 1: # Save new config values
             core.config.Configuration().set( "Autocompletion", "bic_file", self.builder.get_object( 'general_bic_open_entry' ).get_text() )
             core.config.Configuration().set( "Autocompletion", "zipcode_file", self.builder.get_object( 'general_zipcode_open_entry' ).get_text() )
-            PreferencesDialog.session().commit()
+            self._session.commit()
         else: # Discard new config values
-            PreferencesDialog.session().rollback()
+            self._session.rollback()
         self.hide()
