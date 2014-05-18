@@ -32,7 +32,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
         # to the application (Note: NOT the window!)
         self.set_menubar( builder.get_object( "menubar" ) )
         self.set_app_menu( builder.get_object( "appmenu" ) )
-        self._mainwindow = msmgui.main.MainWindow( self, self.database )
+        self._mainwindow = msmgui.main.MainWindow( self )
         self._preferencesdialog = msmgui.dialogs.preferences.PreferencesDialog( self._mainwindow )
         self.add_window( self._mainwindow )
 

@@ -5,7 +5,7 @@ import msmgui.widgets.customerwindow
 import msmgui.widgets.invoicewindow
 import msmgui.dialogs.about
 class MainWindow( Gtk.ApplicationWindow ):
-    def __init__( self, application, database ):
+    def __init__( self, application ):
         Gtk.ApplicationWindow.__init__( self, application=application )
         self.set_property( "window_position", Gtk.WindowPosition.CENTER )
         self.set_property( "default_width", 900 )
@@ -39,8 +39,6 @@ class MainWindow( Gtk.ApplicationWindow ):
         about_action = Gio.SimpleAction.new( "about", None )
         about_action.connect( "activate", self.about_cb )
         self.add_action( about_action )
-
-        self.manager = database
 
         notebook = self.builder.get_object( "notebook" )
         page = self.builder.get_object( "customerwindow" )
