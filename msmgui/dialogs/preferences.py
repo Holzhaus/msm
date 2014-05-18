@@ -5,11 +5,16 @@ import core.database
 import core.config
 from msmgui.widgets.magazinemanager import MagazineManager
 class PreferencesDialog( object ):
-    session = None
     def _scopefunc( self ):
         """ Needed as scopefunc argument for the scoped_session"""
         return self
     def __init__( self, parent ):
+        """
+        __init__ function.
+        Arguments:
+            parent:
+                the parent window of this dialog.
+        """
         self._parent = parent
         PreferencesDialog.session = core.database.Database.get_scoped_session( self._scopefunc )
         # Build GUI
@@ -23,6 +28,9 @@ class PreferencesDialog( object ):
         self._magazinemanager = MagazineManager( session=PreferencesDialog.session )
         self.builder.get_object( "magazineeditorbox" ).add( self._magazinemanager )
     def show( self ):
+        """
+        Shows the dialog.
+        """
         # DB info
         name, driver, version = core.database.Database.get_engine_info()
         version = '.'.join( [str( x ) for x in version] )
@@ -37,27 +45,22 @@ class PreferencesDialog( object ):
 
         self._magazinemanager.start_edit()
 
-        """# Magazine
-        magazines = self.manager.getMagazines()
-        if magazines.count() != 0:
-            magazine = magazines.first()
-        else:
-            magazine = self.manager.addMagazine( "Unbenanntes Magazin", 12 )
-        self.builder.get_object( 'preferences_dialog_magazine_name_entry' ).set_text( magazine.name )
-        self.builder.get_object( 'preferences_dialog_magazine_issuesperyear_spinbutton' ).set_value( magazine.issues_per_year )
-        issues_liststore = self.builder.get_object( "preferences_dialog_issues_liststore" )
-        issues_liststore.clear()
-        date_format = locale.nl_langinfo( locale.D_FMT )
-        for issue in magazine.issues:
-            issues_liststore.append( [issue.id, magazine.id, issue.year, issue.number, issue.date.strftime( date_format ), issue.date.strftime( "%Y-%m-%d" )] )
-        subscriptions_liststore = self.builder.get_object( "preferences_dialog_subscriptions_liststore" )
-        subscriptions_liststore.clear()
-        for subscription in magazine.subscriptions:
-            subscriptions_liststore.append( [subscription.id, magazine.id, subscription.name, subscription.number_of_issues, subscription.value, subscription.value_fixed] )"""
         self.builder.get_object( "content" ).show_all()
     def hide( self ):
+        """
+        Hides the dialog.
+        """
         self.builder.get_object( "content" ).hide()
+    # Callbacks
     def general_bic_open_togglebutton_toggled_cb( self, button, entry=None ):
+        """
+        Callback function for the "toggled" signal of the "Open BIC-file"-Gtk.ToggleButton.
+        Arguments:
+            button:
+                the Gtk.ToggleButton that emitted the signal.
+            entry:
+                the Gtk.Entry which displays the file path.
+        """
         if button.get_active():
             dialog = Gtk.FileChooserDialog( "Bitte Datei auswählen", self.builder.get_object( 'window' ), Gtk.FileChooserAction.OPEN, ( Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK ) )
             filter_bic = Gtk.FileFilter()
@@ -76,6 +79,14 @@ class PreferencesDialog( object ):
             dialog.destroy()
         button.set_active( False )
     def general_zipcode_open_togglebutton_toggled_cb( self, button, entry=None ):
+        """
+        Callback function for the "toggled" signal of the "Open zipcode-file"-Gtk.ToggleButton.
+        Arguments:
+            button:
+                the Gtk.ToggleButton that emitted the signal.
+            entry:
+                the Gtk.Entry which displays the file path.
+        """
         if button.get_active():
             dialog = Gtk.FileChooserDialog( "Bitte Datei auswählen", self.builder.get_object( 'window' ), Gtk.FileChooserAction.OPEN, ( Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK ) )
             filter_bankcode = Gtk.FileFilter()
@@ -93,7 +104,6 @@ class PreferencesDialog( object ):
                 entry.set_text( dialog.get_filename() )
             dialog.destroy()
         button.set_active( False )
-    """ Callbacks """
     def response_cb( self, dialog, response ):
         """Response Callback of the Gtk.Dialog"""
         if response == 1: # Save new config values
