@@ -210,6 +210,9 @@ class Customer( Base ):
     company1 = Column( String )
     company2 = Column( String )
     department = Column( String )
+    email = Column( String )
+    phone = Column( String )
+    fax = Column( String )
     @property
     def name( self ):
         if self.familyname:

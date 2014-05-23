@@ -37,6 +37,9 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( 'company1_entry' ).set_text( "" )
         self.builder.get_object( 'company2_entry' ).set_text( "" )
         self.builder.get_object( 'department_entry' ).set_text( "" )
+        self.builder.get_object( 'email_entry' ).set_text( "" )
+        self.builder.get_object( 'phone_entry' ).set_text( "" )
+        self.builder.get_object( 'fax_entry' ).set_text( "" )
     def _gui_fill( self ):
         self._gui_clear()
         self.builder.get_object( 'id_entry' ).set_text( str( self._customer.id ) if self._customer.id else "" )
@@ -49,6 +52,9 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( 'company1_entry' ).set_text( self._customer.company1 if self._customer.company1 else "" )
         self.builder.get_object( 'company2_entry' ).set_text( self._customer.company2 if self._customer.company2 else "" )
         self.builder.get_object( 'department_entry' ).set_text( self._customer.department if self._customer.department else "" )
+        self.builder.get_object( 'email_entry' ).set_text( self._customer.email if self._customer.email else "" )
+        self.builder.get_object( 'phone_entry' ).set_text( self._customer.phone if self._customer.phone else "" )
+        self.builder.get_object( 'fax_entry' ).set_text( self._customer.fax if self._customer.fax else "" )
     def _gui_set_combobox_text( self, comboboxtext, value ):
         value_set = False
         for i, row in enumerate( comboboxtext.get_model() ):
@@ -96,4 +102,16 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
     def title_comboboxtext_changed_cb( self, combo ):
         if self.signals_blocked: return
         self._customer.title = combo.get_active_text().strip()
+        self.emit( "changed" )
+    def email_entry_changed_cb( self, entry, user_data=None ):
+        if self.signals_blocked: return
+        self._customer.email = entry.get_text().strip()
+        self.emit( "changed" )
+    def phone_entry_changed_cb( self, entry, user_data=None ):
+        if self.signals_blocked: return
+        self._customer.phone = entry.get_text().strip()
+        self.emit( "changed" )
+    def fax_entry_changed_cb( self, entry, user_data=None ):
+        if self.signals_blocked: return
+        self._customer.fax = entry.get_text().strip()
         self.emit( "changed" )
