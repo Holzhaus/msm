@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
 import core.database
+from msmgui.widgets.maineditor import MainEditor
 from msmgui.widgets.addresseditor import AddressEditor
 # from msmgui.widgets.balanceeditor import BalanceEditor
 from msmgui.widgets.bankaccounteditor import BankaccountEditor
 from msmgui.widgets.contracteditor import ContractEditor
 from msmgui.widgets.base import ScopedDatabaseObject
-import dateutil
 import locale
 class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
     __gsignals__ = {
@@ -36,6 +36,8 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.connect_signals( self )
 
         # Add child widgets
+        self._maineditor = MainEditor( self._session )
+        self.builder.get_object( "maineditorbox" ).add( self._maineditor )
         self._addresseditor = AddressEditor( self._session )
         self.builder.get_object( "addresseditorbox" ).add( self._addresseditor )
         # self._balanceeditor = BalanceEditor()
@@ -45,6 +47,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self._contracteditor = ContractEditor( self._session )
         self.builder.get_object( "contracteditorbox" ).add( self._contracteditor )
 
+        self._maineditor.connect( "changed", self.check_changes )
         self._addresseditor.connect( "changed", self.check_changes )
         # self._balanceeditor.connect( "changed", self.check_changes )
         self._bankaccounteditor.connect( "changed", self.check_changes )
@@ -71,6 +74,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
             self.expandable = False
         self._customer = customer
         self.signals_blocked = True
+        self._maineditor.start_edit( self._customer )
         self._addresseditor.start_edit( self._customer )
         # self._balanceeditor.start_edit( self._customer )
         self._bankaccounteditor.start_edit( self._customer )
@@ -148,6 +152,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         if not isinstance( value, bool ):
             raise ValueError
         self._gui_signals_blocked = value
+        self._maineditor.signals_blocked = value
         self._addresseditor.signals_blocked = value
         # self._balanceeditor.signals_blocked = value
         self._bankaccounteditor.signals_blocked = value
@@ -181,93 +186,26 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
                 self.expanded = self.expandable_state
         else:
             self.emit( "expanded-changed" )
-    def _gui_set_combobox_text( self, comboboxtext, value ):
-        value_set = False
-        for i, row in enumerate( comboboxtext.get_model() ):
-            if row[0] == value:
-                comboboxtext.set_active( i )
-                value_set = True
-                break
-        if not value_set:
-            if value != comboboxtext.get_active_text():
-                comboboxtext.append_text( value )
-                comboboxtext.set_active( i + 1 )
     def _gui_clear( self ):
         self.signals_blocked = True
+        self._maineditor._gui_clear()
         self._addresseditor._gui_clear()
         # self._balanceeditor._gui_clear()
         self._bankaccounteditor._gui_clear()
         self._contracteditor._gui_clear()
-
-        self.builder.get_object( 'id_entry' ).set_text( "" )
-        self.builder.get_object( 'familyname_entry' ).set_text( "" )
-        self.builder.get_object( 'prename_entry' ).set_text( "" )
-        self._gui_set_combobox_text( self.builder.get_object( 'honourific_comboboxtext' ), "" )
-        self._gui_set_combobox_text( self.builder.get_object( 'title_comboboxtext' ), "" )
-        self.builder.get_object( 'gender_combobox' ).set_active( core.database.GenderType.Undefined )
-        self.builder.get_object( 'birthday_entry' ).set_text( "" )
-        self.builder.get_object( 'company1_entry' ).set_text( "" )
-        self.builder.get_object( 'company2_entry' ).set_text( "" )
-        self.builder.get_object( 'department_entry' ).set_text( "" )
         self.builder.get_object( 'save_button' ).set_sensitive( False )
         self.builder.get_object( 'discard_button' ).set_sensitive( False )
         self.signals_blocked = False
     def _gui_fill_values( self ):
         self._gui_clear()
         self.signals_blocked = True
-        self.builder.get_object( 'id_entry' ).set_text( str( self._customer.id ) if self._customer.id else "" )
-        self.builder.get_object( 'familyname_entry' ).set_text( self._customer.familyname if self._customer.familyname else "" )
-        self.builder.get_object( 'prename_entry' ).set_text( self._customer.prename if self._customer.prename else "" )
-        self._gui_set_combobox_text( self.builder.get_object( 'honourific_comboboxtext' ), self._customer.honourific )
-        self._gui_set_combobox_text( self.builder.get_object( 'title_comboboxtext' ), self._customer.title )
-        self.builder.get_object( 'gender_combobox' ).set_active( self._customer.gender if self._customer.gender else core.database.GenderType.Undefined )
-        self.builder.get_object( 'birthday_entry' ).set_text( self._customer.birthday.strftime( locale.nl_langinfo( locale.D_FMT ) ) if self._customer.birthday else "" )
-        self.builder.get_object( 'company1_entry' ).set_text( self._customer.company1 if self._customer.company1 else "" )
-        self.builder.get_object( 'company2_entry' ).set_text( self._customer.company2 if self._customer.company2 else "" )
-        self.builder.get_object( 'department_entry' ).set_text( self._customer.department if self._customer.department else "" )
+        self._maineditor._gui_fill()
         self._addresseditor._gui_fill()
         # self._balanceeditor._gui_fill()
         self._bankaccounteditor._gui_fill()
         self._contracteditor._gui_fill()
-
         self.signals_blocked = False
     """Callbacks"""
-    def prename_entry_changed_cb( self, entry, user_data=None ):
-        if self.signals_blocked: return
-        self._customer.prename = entry.get_text().strip()
-        self.check_changes()
-    def familyname_entry_changed_cb( self, entry, user_data=None ):
-        if self.signals_blocked: return
-        self._customer.familyname = entry.get_text().strip()
-        self.check_changes()
-    def company1_entry_changed_cb( self, entry, user_data=None ):
-        if self.signals_blocked: return
-        self._customer.company1 = entry.get_text().strip()
-        self.check_changes()
-    def company2_entry_changed_cb( self, entry, user_data=None ):
-        if self.signals_blocked: return
-        self._customer.company2 = entry.get_text().strip()
-        self.check_changes()
-    def department_entry_changed_cb( self, entry, user_data=None ):
-        if self.signals_blocked: return
-        self._customer.department = entry.get_text().strip()
-        self.check_changes()
-    def birthday_entry_changed_cb( self, entry, user_data=None ):
-        if self.signals_blocked: return
-        self._customer.birthday = dateutil.parser.parse( entry.get_text(), dayfirst=True ).date() if entry.get_text() else None
-        self.check_changes()
-    def gender_combobox_changed_cb( self, combo ):
-        if self.signals_blocked: return
-        self._customer.gender = combo.get_model()[combo.get_active()][0] if ( combo.get_active() > 0 ) else 0
-        self.check_changes()
-    def honourific_comboboxtext_changed_cb( self, combo ):
-        if self.signals_blocked: return
-        self._customer.honourific = combo.get_active_text().strip()
-        self.check_changes()
-    def title_comboboxtext_changed_cb( self, combo ):
-        if self.signals_blocked: return
-        self._customer.title = combo.get_active_text().strip()
-        self.check_changes()
     def save_button_clicked_cb( self, button ):
         if self.signals_blocked: return
         self.save()
