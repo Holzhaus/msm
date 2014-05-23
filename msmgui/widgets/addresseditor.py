@@ -3,6 +3,7 @@
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
+from msmgui.widgets.base import ScopedDatabaseObject
 class AddressRowReference( msmgui.rowreference.GenericRowReference ):
     def get_address( self ):
         """Returns the core.database.Address that is associated with the Gtk.TreeRow that this instance references."""
@@ -12,12 +13,13 @@ class AddressRowReference( msmgui.rowreference.GenericRowReference ):
             raise RuntimeError( "tried to get an address that does not exist" )
         return address
 
-class AddressEditor( Gtk.Box ):
+class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
     """Address editor inside the Customer editor"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
     def __init__( self, session ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self.signals_blocked = True
         self._customer = None
@@ -32,8 +34,7 @@ class AddressEditor( Gtk.Box ):
         self.builder.get_object( "addresses_zipcode_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_zipcode_cellrenderertext" ), self.zipcode_cell_data_func )
         self.builder.get_object( "addresses_city_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_city_cellrenderertext" ), self.city_cell_data_func )
         self.builder.get_object( "addresses_co_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_co_cellrenderertext" ), self.co_cell_data_func )
-        # Store reference to the session
-        self._session = session
+
     def add_address( self, address ):
         """Add an address to the Gtk.Treemodel"""
         model = self.builder.get_object( "addresses_liststore" )

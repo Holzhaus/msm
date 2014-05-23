@@ -4,6 +4,7 @@ from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
 import locale
+from msmgui.widgets.base import ScopedDatabaseObject
 class BalanceRowReference( msmgui.rowreference.GenericRowReference ):
     def get_entry( self ):
         """Returns the core.database.Contract that is associated with the Gtk.TreeRow that this instance references."""
@@ -12,12 +13,13 @@ class BalanceRowReference( msmgui.rowreference.GenericRowReference ):
         if not isinstance( entry, core.database.Debit ) and not isinstance( entry, core.database.Credit ):
             raise RuntimeError( "tried to get an entry that does not exist" )
         return entry
-class BalanceEditor( Gtk.Box ):
+class BalanceEditor( Gtk.Box, ScopedDatabaseObject ):
     """Balance editor inside the Customer editor"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
     def __init__( self ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self._customer = None
         self.signals_blocked = True

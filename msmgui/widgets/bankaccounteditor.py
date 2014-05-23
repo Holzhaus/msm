@@ -3,6 +3,7 @@
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
+from msmgui.widgets.base import ScopedDatabaseObject
 class BankaccountRowReference( msmgui.rowreference.GenericRowReference ):
     def get_bankaccount( self ):
         """Returns the core.database.Bankaccount that is associated with the Gtk.TreeRow that this instance references."""
@@ -12,12 +13,13 @@ class BankaccountRowReference( msmgui.rowreference.GenericRowReference ):
             raise RuntimeError( "tried to get a bankaccount that does not exist" )
         return bankaccount
 
-class BankaccountEditor( Gtk.Box ):
+class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
     """Bankaccount editor inside the Customer editor"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
     def __init__( self, session ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self._customer = None
         self.signals_blocked = True
@@ -32,8 +34,6 @@ class BankaccountEditor( Gtk.Box ):
         self.builder.get_object( "bankaccounts_bic_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "bankaccounts_bic_cellrenderertext" ), self.bic_cell_data_func )
         self.builder.get_object( "bankaccounts_bank_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "bankaccounts_bank_cellrenderertext" ), self.bank_cell_data_func )
         self.builder.get_object( "bankaccounts_owner_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "bankaccounts_owner_cellrenderertext" ), self.owner_cell_data_func )
-
-        self._session = session
     def add_bankaccount( self, bankaccount ):
         """Add a bankaccount to the Gtk.Treemodel"""
         model = self.builder.get_object( "bankaccounts_liststore" )

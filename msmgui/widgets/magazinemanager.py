@@ -5,6 +5,7 @@ import core.database
 import msmgui.rowreference
 import locale
 import dateutil
+from msmgui.widgets.base import ScopedDatabaseObject
 class MagazineManagerRowReference( msmgui.rowreference.GenericRowReference ):
     def get_object( self ):
         """Returns the core.database.Magazine that is associated with the Gtk.TreeRow that this instance references."""
@@ -14,7 +15,7 @@ class MagazineManagerRowReference( msmgui.rowreference.GenericRowReference ):
             raise RuntimeError( "tried to get a magazine that does not exist" )
         return obj
 
-class MagazineManager( Gtk.Box ):
+class MagazineManager( Gtk.Box, ScopedDatabaseObject ):
     """Magazine mananger"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
@@ -23,10 +24,8 @@ class MagazineManager( Gtk.Box ):
     DEFAULT_SUBSCRIPTION_VALUE = 10
     DEFAULT_MAGAZINE_NAME = "Neues Magazin"
     DEFAULT_MAGAZINE_ISSUENUM = 12
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self, session=None ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self.signals_blocked = True
         self._customer = None
@@ -38,11 +37,6 @@ class MagazineManager( Gtk.Box ):
         # Connect Signals
         self.builder.connect_signals( self )
         self.builder.get_object( "subscription_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "subscription_cellrenderertext" ), self.subscription_cell_data_func )
-        if not session:
-            session = core.database.Database.get_scoped_session( self._scopefunc )
-        self._session = session
-        if self._session is None:
-            raise RuntimeError( "Can't init MagazineManager without a session!" )
         # Add Child Widgets
         self._magazineeditor = MagazineEditor( session=self._session )
         self.builder.get_object( "magazine_page" ).add( self._magazineeditor )
@@ -165,15 +159,13 @@ class IssueRowReference( msmgui.rowreference.GenericRowReference ):
         if not isinstance( obj, core.database.Issue ):
             raise RuntimeError( "tried to get an Issue that does not exist" )
         return obj
-class MagazineEditor( Gtk.Box ):
+class MagazineEditor( Gtk.Box, ScopedDatabaseObject ):
     """Magazine Editor"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self, session=None ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self.signals_blocked = True
         self._magazine = None
@@ -187,11 +179,6 @@ class MagazineEditor( Gtk.Box ):
         self.builder.get_object( "issues_date_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "issues_date_cellrenderertext" ), self.issues_date_cell_data_func )
         self.builder.get_object( "issues_number_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "issues_number_cellrenderertext" ), self.issues_number_cell_data_func )
         self.builder.get_object( "issues_year_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "issues_year_cellrenderertext" ), self.issues_year_cell_data_func )
-        if not session:
-            session = core.database.Database.get_scoped_session( self._scopefunc )
-        self._session = session
-        if self._session is None:
-            raise RuntimeError( "Can't init MagazineEditor without a session!" )
     def add_issue( self, issue ):
         """Add an issue to the Gtk.Treemodel"""
         model = self.builder.get_object( "issues_liststore" )
@@ -278,15 +265,13 @@ class MagazineEditor( Gtk.Box ):
         self._magazine.issues_per_year = int( spinbutton.get_value() )
         self.emit( "changed" )
 
-class SubscriptionEditor( Gtk.Box ):
+class SubscriptionEditor( Gtk.Box, ScopedDatabaseObject ):
     """Subscription Editor"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self, session=None ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self.signals_blocked = True
         self._subscription = None
@@ -297,11 +282,6 @@ class SubscriptionEditor( Gtk.Box ):
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals
         self.builder.connect_signals( self )
-        if not session:
-            session = core.database.Database.get_scoped_session( self._scopefunc )
-        self._session = session
-        if self._session is None:
-            raise RuntimeError( "Can't init SubscriptionEditor without a session!" )
     def _gui_fill( self ):
         self.signals_blocked = True
         self.builder.get_object( "subscription_name_entry" ).set_text( self._subscription.name )

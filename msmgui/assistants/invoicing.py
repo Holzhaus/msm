@@ -8,15 +8,12 @@ import datetime
 import threading
 import dateutil
 from core.errors import InvoiceError
-class InvoicingAssistant( GObject.GObject ):
+from msmgui.widgets.base import ScopedDatabaseObject
+class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
-    session = None
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self ):
+        ScopedDatabaseObject.__init__( self )
         GObject.GObject.__init__( self )
-        InvoicingAssistant.session = core.database.Database.get_scoped_session( self._scopefunc )
         # Build GUI
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/assistants/invoicing.glade" )
@@ -94,19 +91,19 @@ class InvoicingAssistant( GObject.GObject ):
                 local_session.remove()
                 GLib.idle_add( lambda: self._gui_stop( len( self.invoices ), num_contracts ) )
             def _gui_start( self ):
-                spinner, label, assistant, page, invoicetable = self.gui_objects
+                invoicingassistant, spinner, label, assistant, page, invoicetable = self.gui_objects
                 label.set_text( "Generiere Rechnungen..." )
                 spinner.start()
             def _gui_update( self, contract_current, contract_total ):
-                spinner, label, assistant, page, invoicetable = self.gui_objects
+                invoicingassistant, spinner, label, assistant, page, invoicetable = self.gui_objects
                 label.set_text( "Generiere Rechnungen... (Vertrag {}/{})".format( contract_current, contract_total ) )
             def _gui_stop( self, num_invoices, num_contracts ):
+                invoicingassistant, spinner, label, assistant, page, invoicetable = self.gui_objects
                 merged_contracts = []
                 for unmerged_contract in self.contracts:
-                    contract = InvoicingAssistant.session().merge( unmerged_contract ) # Readd the object to the main thread session
+                    contract = invoicingassistant.session.merge( unmerged_contract ) # Readd the object to the main thread session
                     merged_contracts.append( contract )
                 self.contracts = merged_contracts
-                spinner, label, assistant, page, invoicetable = self.gui_objects
                 invoicetable.clear()
                 def gen( invoicetable, invoices, session, step=10 ):
                     treeview = invoicetable.builder.get_object( "invoices_treeview" )
@@ -129,7 +126,7 @@ class InvoicingAssistant( GObject.GObject ):
                         model.set_sort_column_id( *sort_settings )
                     treeview.thaw_child_notify()
                     yield False
-                g = gen( invoicetable, self.invoices, InvoicingAssistant.session )
+                g = gen( invoicetable, self.invoices, invoicingassistant.session )
                 if next( g ): # run once now, remaining iterations when idle
                     GLib.idle_add( next, g )
                 label.set_text( "Fertig! {} Rechnungen aus {} Verträgen generiert.".format( num_invoices, num_contracts ) )
@@ -138,10 +135,10 @@ class InvoicingAssistant( GObject.GObject ):
         assistant.set_page_complete( page, False )
         spinner = self.builder.get_object( "generate_spinner" )
         label = self.builder.get_object( "generate_label" )
-        gui_objects = ( spinner, label, assistant, page, self._invoicetable )
-        InvoicingAssistant.session.close()
-        contracts = core.database.Contract.get_all( session=InvoicingAssistant.session ) # We expunge everything, use it inside the thread and readd it later
-        InvoicingAssistant.session.expunge_all()
+        gui_objects = ( self, spinner, label, assistant, page, self._invoicetable )
+        self._session.close()
+        contracts = core.database.Contract.get_all( session=self.session ) # We expunge everything, use it inside the thread and readd it later
+        self._session.expunge_all()
         date = datetime.date.today()
         maturity = datetime.timedelta( days=14 )
         accounting_enddate = dateutil.parser.parse( self.builder.get_object( "invoice_accountingenddate_entry" ).get_text(), dayfirst=True ).date()
@@ -182,16 +179,16 @@ class InvoicingAssistant( GObject.GObject ):
         label = self.builder.get_object( "save_label" )
         gui_objects = ( spinner, label, assistant, page, self )
         invoices = self.invoice_generator_threadobj.invoices
-        InvoicingAssistant.session.expunge_all()
-        InvoicingAssistant.session.close()
+        self._session.expunge_all()
+        self._session.close()
         threadobj = ThreadObject( invoices, gui_objects )
         threadobj.start()
     """
     Callbacks
     """
     def hide_cb( self, assistant ):
-        InvoicingAssistant.session.rollback()
-        InvoicingAssistant.session.close()
+        self._session.rollback()
+        self._session.close()
     def close_cb( self, assistant ):
         assistant.hide()
     def cancel_cb( self, assistant ):

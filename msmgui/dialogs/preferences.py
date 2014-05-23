@@ -4,10 +4,8 @@ from gi.repository import Gtk
 import core.database
 import core.config
 from msmgui.widgets.magazinemanager import MagazineManager
-class PreferencesDialog( object ):
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
+from msmgui.widgets.base import ScopedDatabaseObject
+class PreferencesDialog( ScopedDatabaseObject ):
     def __init__( self, parent ):
         """
         __init__ function.
@@ -15,8 +13,8 @@ class PreferencesDialog( object ):
             parent:
                 the parent window of this dialog.
         """
+        ScopedDatabaseObject.__init__( self )
         self._parent = parent
-        self._session = core.database.Database.get_scoped_session( self._scopefunc )
         # Build GUI
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/dialogs/preferences.glade" )

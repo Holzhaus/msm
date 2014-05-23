@@ -6,6 +6,8 @@ from core.config import Configuration
 import locale
 import msmgui.rowreference
 import core.pdfgenerator
+from msmgui.widgets.base import ScopedDatabaseObject
+
 class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
     def __init__( self, model, path ):
         """Constructor. Internally, the reference always points to the row in the base Gtk.TreeModel."""
@@ -42,7 +44,7 @@ class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
         invoice = row[0]
         return invoice
 
-class InvoiceTable( Gtk.Box ):
+class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
     MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
     FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
@@ -50,10 +52,8 @@ class InvoiceTable( Gtk.Box ):
         'refresh-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
         'refresh-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self ):
+        ScopedDatabaseObject.__init__( self )
         Gtk.Box.__init__( self )
         # Build GUI
         self.builder = Gtk.Builder()
@@ -85,8 +85,6 @@ class InvoiceTable( Gtk.Box ):
         self._filter = ""
         self._selection_blocked = False
         self._current_selection = None
-
-        self.session = core.database.Database.get_scoped_session( self._scopefunc )
 
     """Data interaction"""
     def clear( self ):

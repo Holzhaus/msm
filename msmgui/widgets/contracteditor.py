@@ -5,6 +5,7 @@ import locale
 import dateutil.parser
 import core.database
 import msmgui.rowreference
+from msmgui.widgets.base import ScopedDatabaseObject
 class ContractRowReference( msmgui.rowreference.GenericRowReference ):
     def get_contract( self ):
         """Returns the core.database.Contract that is associated with the Gtk.TreeRow that this instance references."""
@@ -14,12 +15,13 @@ class ContractRowReference( msmgui.rowreference.GenericRowReference ):
             raise RuntimeError( "tried to get a contract that does not exist" )
         return contract
 
-class ContractEditor( Gtk.Box ):
+class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
     """Contract editor inside the Customer editor"""
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
     def __init__( self, session ):
+        ScopedDatabaseObject.__init__( self, session )
         Gtk.Box.__init__( self )
         self._customer = None
         self.signals_blocked = True
@@ -38,8 +40,6 @@ class ContractEditor( Gtk.Box ):
         self.builder.get_object( "contracts_billingaddress_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "contracts_billingaddress_cellrenderercombo" ), self.billingaddress_cell_data_func )
         self.builder.get_object( "contracts_bankaccount_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "contracts_directwithdrawal_cellrenderertoggle" ), self.directwithdrawal_cell_data_func )
         self.builder.get_object( "contracts_bankaccount_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "contracts_bankaccount_cellrenderercombo" ), self.bankaccount_cell_data_func )
-
-        self._session = session
     def add_contract( self, contract ):
         """Add a contract to the Gtk.Treemodel"""
         model = self.builder.get_object( "contracts_liststore" )

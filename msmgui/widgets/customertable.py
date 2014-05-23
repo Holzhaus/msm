@@ -5,6 +5,7 @@ import core.database
 from core.config import Configuration
 import locale
 import msmgui.rowreference
+from msmgui.widgets.base import ScopedDatabaseObject
 class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
     @staticmethod
     def new_by_iter( model, treeiter ):
@@ -50,7 +51,7 @@ class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
         customer = self.get_customer()
         self.set_row( CustomerTable.convert_customer_to_rowdata( customer ) )
 
-class CustomerTable( Gtk.Box ):
+class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
     MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
     FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
@@ -58,10 +59,8 @@ class CustomerTable( Gtk.Box ):
         'refresh-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
         'refresh-ended': ( GObject.SIGNAL_RUN_FIRST, None, () )
     }
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self ):
+        ScopedDatabaseObject.__init__( self )
         Gtk.Box.__init__( self )
         # Build GUI
         self.builder = Gtk.Builder()
@@ -86,8 +85,6 @@ class CustomerTable( Gtk.Box ):
         self._filter = ""
         self._selection_blocked = False
         self._current_selection = None
-
-        self.session = core.database.Database.get_scoped_session( self._scopefunc )
     def import_xml( self ):
         """FIXME: REMOVE THIS"""
         subscription_mapping = ( ( 1, 'Normalabo Position' ), ( 2, 'Soliabo Position' ) )

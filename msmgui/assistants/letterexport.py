@@ -7,21 +7,17 @@ import datetime
 import threading
 from msmgui.widgets.lettercompositor import LetterCompositor
 import sqlalchemy.orm.session
-class LetterExportAssistant( GObject.GObject ):
+from msmgui.widgets.base import ScopedDatabaseObject
+class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
     class Page:
         """
         Enumeration of LetterExportAssistants pages.
         """
         Intro, Compose, Confirm, Render, Summary = range( 5 )
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
-    def _scopefunc( self ):
-        """
-        Needed as scopefunc argument for the scoped_session
-        """
-        return self
     def __init__( self ):
+        ScopedDatabaseObject.__init__( self )
         GObject.GObject.__init__( self )
-        self._session = core.database.Database.get_scoped_session( self._scopefunc )
         # Build GUI
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/assistants/letterexport.glade" )

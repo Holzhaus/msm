@@ -32,3 +32,20 @@ class RefreshableWindow( Gtk.Overlay ):
             self.set_sensitive( True )
             self._loadingspinner.stop()
             self._loadingspinner.hide()
+
+import sqlalchemy.orm.scoping
+import core.database
+class ScopedDatabaseObject( object ):
+    @property
+    def session( self ):
+        return self._session
+    def _scopefunc( self ):
+        """ Needed as scopefunc argument for the scoped_session"""
+        return self
+    def __init__( self, session=None ):
+        if type( session ) is not sqlalchemy.orm.scoping.scoped_session:
+            session = core.database.Database.get_scoped_session( self._scopefunc )
+        # Store reference to the session
+        if type( session ) is not sqlalchemy.orm.scoping.scoped_session:
+            raise RuntimeError( "Can't __init__ without a session!" )
+        self._session = session

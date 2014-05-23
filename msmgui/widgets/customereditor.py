@@ -6,9 +6,10 @@ from msmgui.widgets.addresseditor import AddressEditor
 # from msmgui.widgets.balanceeditor import BalanceEditor
 from msmgui.widgets.bankaccounteditor import BankaccountEditor
 from msmgui.widgets.contracteditor import ContractEditor
+from msmgui.widgets.base import ScopedDatabaseObject
 import dateutil
 import locale
-class CustomerEditor( Gtk.Box ):
+class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
     __gsignals__ = {
         'edit-started': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ),
         'edit-ended': ( GObject.SIGNAL_RUN_FIRST, None, () ),
@@ -17,10 +18,8 @@ class CustomerEditor( Gtk.Box ):
         'save': ( GObject.SIGNAL_RUN_FIRST, None, ( int, bool ) ),
         'expanded-changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
     }
-    def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
-        return self
     def __init__( self ):
+        ScopedDatabaseObject.__init__( self )
         Gtk.Box.__init__( self )
 
         self._gui_signals_blocked = True
@@ -35,7 +34,6 @@ class CustomerEditor( Gtk.Box ):
         # Connect Signals
         # FIXME I'd like to use self.builder.connect_signals( self ), but unless this method returns the handler_ids for the connected signals, I have to connect them manually
         self.builder.connect_signals( self )
-        self._session = core.database.Database.get_scoped_session( self._scopefunc )
 
         # Add child widgets
         self._addresseditor = AddressEditor( self._session )
