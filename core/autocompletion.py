@@ -28,18 +28,18 @@ class BankInfoLoader( AbstractInfoLoader ):
     def load( self, fname, fencoding='latin1' ):
         self.clear()
         fieldwidths = ( 8, # BLZ
-                       1, # Merkmal
+                        1, # Merkmal
                        58, # Bezeichnung
-                       5, # PLZ
+                        5, # PLZ
                        35, # Ort
                        27, # Kurzbezeichnung
-                       4, # PAN
+                        4, # PAN
                        11, # BIC
-                       2, # Prüfzifferberechnungsmethode
-                       6, # Datensatznummer
-                       1, # Änderungskennzeichen
-                       1, # Bankleitzahllöschung
-                       8 ) # Nachfolge-BLZ
+                        2, # Prüfzifferberechnungsmethode
+                        6, # Datensatznummer
+                        1, # Änderungskennzeichen
+                        1, # Bankleitzahllöschung
+                        8 ) # Nachfolge-BLZ
         fmtstring = ''.join( '%ds' % f for f in fieldwidths )
         parse = struct.Struct( fmtstring ).unpack_from
         with open( fname, mode='rb' ) as f:
@@ -49,6 +49,14 @@ class BankInfoLoader( AbstractInfoLoader ):
                 if len( bankcode ) == 8 and len( bic ) == 11:
                     obj = BankInfo( bankcode, bic, name, name_short )
                     self.add( obj )
+    def get( self, key, value ):
+        if key == 'iban':
+            iban = value.upper()
+            if iban.startswith( 'DE' ):
+                bankcode = iban[4:12]
+                return super().get( "bankcode", bankcode )
+        else:
+            return super().get( key, value )
 class BankInfo:
     def __init__( self, bankcode, bic, name, name_short ):
         self._bankcode = bankcode
