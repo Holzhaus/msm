@@ -4,14 +4,14 @@ from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf, GLib
 from core.config import Configuration
 import msmgui.widgets.customereditor
 import msmgui.widgets.customertable
-import msmgui.widgets.refreshablewindow
-class CustomerWindow( msmgui.widgets.refreshablewindow.RefreshableWindow ):
+import msmgui.widgets.base
+class CustomerWindow( msmgui.widgets.base.RefreshableWindow ):
     __gsignals__ = {
         'status-changed': ( GObject.SIGNAL_RUN_FIRST, None, ( str, ) )
     }
     def __init__( self ):
         self._customertable = msmgui.widgets.customertable.CustomerTable()
-        msmgui.widgets.refreshablewindow.RefreshableWindow.__init__( self, [self._customertable] )
+        msmgui.widgets.base.RefreshableWindow.__init__( self, [self._customertable] )
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/widgets/customerwindow/customerwindow.glade" )
         self.builder.get_object( "content" ).reparent( self )

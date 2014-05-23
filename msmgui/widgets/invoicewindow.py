@@ -7,14 +7,14 @@ import datetime
 import core.database
 import msmgui.assistants.invoicing
 import msmgui.assistants.letterexport
-import msmgui.widgets.refreshablewindow
-class InvoiceWindow( msmgui.widgets.refreshablewindow.RefreshableWindow ):
+import msmgui.widgets.base
+class InvoiceWindow( msmgui.widgets.base.RefreshableWindow ):
     __gsignals__ = {
         'status-changed': ( GObject.SIGNAL_RUN_FIRST, None, ( str, ) )
     }
     def __init__( self ):
         self._invoicetable = msmgui.widgets.invoicetable.InvoiceTable()
-        msmgui.widgets.refreshablewindow.RefreshableWindow.__init__( self, [self._invoicetable] )
+        msmgui.widgets.base.RefreshableWindow.__init__( self, [self._invoicetable] )
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/widgets/invoicewindow/invoicewindow.glade" )
         self.builder.get_object( "content" ).reparent( self )
