@@ -140,7 +140,7 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         if city is not None:
             address.city = city.name
             address.zipcode = city.zipcode
-            address.country = city.country
+            address.countrycode = city.country
         else:
             address.zipcode = zipcode
         self.emit( "changed" )
