@@ -5,6 +5,7 @@ import core.database
 import core.autocompletion
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
+import pytz
 class AddressRowReference( msmgui.rowreference.GenericRowReference ):
     def get_address( self ):
         """Returns the core.database.Address that is associated with the Gtk.TreeRow that this instance references."""
@@ -35,7 +36,11 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( "addresses_zipcode_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_zipcode_cellrenderertext" ), self.zipcode_cell_data_func )
         self.builder.get_object( "addresses_city_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_city_cellrenderertext" ), self.city_cell_data_func )
         self.builder.get_object( "addresses_co_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_co_cellrenderertext" ), self.co_cell_data_func )
-
+        self.builder.get_object( "addresses_country_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_country_cellrenderercombo" ), self.country_cell_data_func )
+        # Add Country List
+        countries_liststore = self.builder.get_object( 'countries_liststore' )
+        for country_code, country_name in sorted( pytz.country_names.items() ): # FIXME: Use babel.Locale instead
+            countries_liststore.append( [country_code.upper(), country_name] )
     def add_address( self, address ):
         """Add an address to the Gtk.Treemodel"""
         model = self.builder.get_object( "addresses_liststore" )
@@ -88,6 +93,14 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         address = rowref.get_address()
         if address.city:
             new_text = address.city
+        else:
+            new_text = ""
+        cellrenderer.set_property( 'text', new_text )
+    def country_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
+        rowref = AddressRowReference( model, model.get_path( treeiter ) )
+        address = rowref.get_address()
+        if address.countrycode:
+            new_text = address.countrycode # FIXME: Use countryname instead of countrycode
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
@@ -157,6 +170,21 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = AddressRowReference( model, Gtk.TreePath( path_string ) )
         address = rowref.get_address()
         address.co = new_text.strip()
+        self.emit( "changed" )
+    def addresses_country_cellrenderercombo_changed_cb( self, combo, path_string, new_iter ):
+        if self.signals_blocked: return
+        model = self.builder.get_object( 'addresses_liststore' )
+        rowref = AddressRowReference( model, Gtk.TreePath( path_string ) )
+        address = rowref.get_address()
+        countrycode = 'DE' # FIXME: Default country value
+        if isinstance( new_iter, Gtk.TreeIter ):
+            combomodel = self.builder.get_object( "countries_liststore" )
+            countrycode = combomodel[new_iter][0]
+        address.countrycode = countrycode
+        city = core.autocompletion.Cities.get( address.countrycode, "zipcode", address.zipcode )
+        if city is not None:
+            address.city = city.name
+            address.zipcode = city.zipcode
         self.emit( "changed" )
 """self.emit( "changed" )
         model, treeiter = self.builder.get_object( 'customers_edit_addresses_treeview_selection' ).get_selected()

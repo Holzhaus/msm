@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.16.1 -->
+<!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <object class="GtkListStore" id="addresses_liststore">
     <columns>
       <!-- column-name address -->
       <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="GtkListStore" id="countries_liststore">
+    <columns>
+      <!-- column-name iso3661-1alpha2code -->
+      <column type="gchararray"/>
+      <!-- column-name name -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkWindow" id="dummywindow">
@@ -129,6 +137,23 @@
                         <property name="editable">True</property>
                         <property name="placeholder_text">«Leer»</property>
                         <signal name="edited" handler="addresses_city_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="addresses_country_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="min_width">60</property>
+                    <property name="title" translatable="yes">Land</property>
+                    <child>
+                      <object class="GtkCellRendererCombo" id="addresses_country_cellrenderercombo">
+                        <property name="editable">True</property>
+                        <property name="has_entry">False</property>
+                        <property name="model">countries_liststore</property>
+                        <property name="text_column">1</property>
+                        <signal name="changed" handler="addresses_country_cellrenderercombo_changed_cb" swapped="no"/>
                       </object>
                     </child>
                   </object>
