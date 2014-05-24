@@ -83,6 +83,13 @@ class SubscriptionManagerIO:
                     customer.gender = core.database.GenderType.Male
                 elif el_customer.get( 'gender' ) == 'f':
                     customer.gender = core.database.GenderType.Female
+            if el_customer.get( 'telephone' ):
+                if el_customer.get( 'telephone-prefix' ):
+                    customer.phone = "-".join( ( el_customer.get( 'telephone-prefix' ), el_customer.get( 'telephone' ) ) )
+            if el_customer.get( 'telefax' ):
+                customer.fax = el_customer.get( 'telefax' )
+            if el_customer.get( 'email' ):
+                customer.email = el_customer.get( 'email' )
             address = None
             for el_address in el_customer.find( 'addresses' ):
                 address = customer.add_address( el_address.get( 'street' ), el_address.get( 'zipcode' ), el_address.get( 'city' ), el_address.get( 'country' ) )
