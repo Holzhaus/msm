@@ -388,6 +388,7 @@
                 <property name="can_focus">False</property>
                 <property name="has_entry">True</property>
                 <items>
+                  <item translatable="yes"></item>
                   <item translatable="yes">Herr</item>
                   <item translatable="yes">Frau</item>
                   <item translatable="yes">Familie</item>
