@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import shutil
-import tempfile
 import subprocess
+import tempfile
 import re
-import jinja2
 import locale
-import core.database
 import threading
 import datetime
-from core.errors import LatexError
+import jinja2
+import core.database
+from core.lib.pdflatex import PdfGenerator
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
@@ -40,36 +39,7 @@ template_env.comment_start_string = '((='
 template_env.comment_end_string = '=))'
 template_env.filters['escape_tex'] = escape_tex
 template_env.filters['escape_nl'] = escape_nl
-class PdfGenerator():
-    @staticmethod
-    def latexstr_to_pdf( latexstr, output_file='/tmp/output.pdf' ):
-        f = tempfile.NamedTemporaryFile( delete=False )
-        f.write( bytes( latexstr, 'UTF-8' ) )
-        f.close()
-        PdfGenerator.pdflatex( f.name , output_file )
-        os.remove( f.name )
-    @staticmethod
-    def pdflatex( latexfile, output_file ):
-        jobname = 'document'
-        env = os.environ.copy()
-        if not 'TEXINPUTS' in env:
-            env['TEXINPUTS'] = ''
-        env['TEXINPUTS'] = ':'.join( [os.path.abspath( 'data/templates/latex' ), env['TEXINPUTS']] )
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            cmd = ['pdflatex',
-                   '-halt-on-error',
-                   '-interaction', 'nonstopmode',
-                   '-jobname', jobname,
-                   '-output-directory', tmpdirname,
-                   latexfile]
-            with tempfile.TemporaryFile() as out:
-                latex = subprocess.call( cmd, env=env, stdout=out, stderr=subprocess.STDOUT )
-                if latex != 0:
-                    out.seek( 0 )
-                    print( out.read().decode( "utf-8" ) )
-                    raise LatexError()
-            tmp_uri = os.path.join( tmpdirname, '%s.pdf' % jobname )
-            shutil.copy( tmp_uri, output_file )
+
 class Letter:
     def __init__( self, contract, date=datetime.date.today(), contents=None ):
         self.contract = contract
@@ -114,21 +84,20 @@ class LetterRenderer:
         if not filepath or not os.path.exists( filepath ):
             raise IOError( "File does not exist" )
         FNULL = open( os.devnull, "wb" )
-        shell = False
         if sys.platform.startswith( 'darwin' ):
-            proc = subprocess.call( ["open", "-W", filepath], stdout=FNULL, stderr=FNULL )
+            subprocess.call( ["open", "-W", filepath], stdout=FNULL, stderr=FNULL )
         elif sys.platform.startswith( 'linux' ):
             # FIXME: On Linux, we need to use gi.repository.Gio, because I don't want parse all that fucking XDG info, just because it doesn't have a WAIT option
             mime_type, must_support_uris = Gio.content_type_guess( filepath )
             app_info = Gio.AppInfo.get_default_for_type( mime_type, must_support_uris )
             if app_info:
                 opener = app_info.get_executable()
-                proc = subprocess.call( [opener, filepath], stdout=FNULL, stderr=FNULL, shell=False )
+                subprocess.call( [opener, filepath], stdout=FNULL, stderr=FNULL, shell=False )
             else:
                 print( "Can't find app that can open '{}' files".format( mime_type ) )
         elif sys.platform.startswith( 'win32' ):
             # can't use os.startfile here, because maybe we need to remove the tempfile afterwards
-            proc = subprocess.call( ["start", "/WAIT", filepath], stdout=FNULL, stderr=FNULL, shell=True )
+            subprocess.call( ["start", "/WAIT", filepath], stdout=FNULL, stderr=FNULL, shell=True )
         if delete_file_after:
             os.remove( filepath )
     @staticmethod
