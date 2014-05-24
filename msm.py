@@ -62,6 +62,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
         quit_action.connect( "activate", self.quit_cb )
         self.add_action( quit_action )
         self._mainwindow.show_all()
+        self._mainwindow.present()
     # Callbacks for AppMenu Actions
     def settings_cb( self, action, parameter ):
         """
