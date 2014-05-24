@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
 import core.database
+import core.autocompletion
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
 class AddressRowReference( msmgui.rowreference.GenericRowReference ):
@@ -131,8 +132,17 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         model = self.builder.get_object( 'addresses_liststore' )
         rowref = AddressRowReference( model, Gtk.TreePath( path_string ) )
         address = rowref.get_address()
-        address.zipcode = new_text.strip()
-        # TODO: Autocompletion
+        zipcode = new_text.strip()
+        city = core.autocompletion.Cities.get_by_iso_zipcode( zipcode )
+        if city is None:
+            country = 'DE' # FIXME: Enable completion for other countries too
+            city = core.autocompletion.Cities.get( country, "zipcode", zipcode )
+        if city is not None:
+            address.city = city.name
+            address.zipcode = city.zipcode
+            address.country = city.country
+        else:
+            address.zipcode = zipcode
         self.emit( "changed" )
     def addresses_city_cellrenderertext_edited_cb( self, cellrenderer, path_string, new_text ):
         if self.signals_blocked: return

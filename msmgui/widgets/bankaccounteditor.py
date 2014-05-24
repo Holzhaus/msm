@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
 import core.database
+import core.autocompletion
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
 class BankaccountRowReference( msmgui.rowreference.GenericRowReference ):
@@ -125,7 +126,10 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = BankaccountRowReference( model, Gtk.TreePath( path_string ) )
         bankaccount = rowref.get_bankaccount()
         bankaccount.iban = new_text.strip()
-        # TODO: Autocompletion
+        bank = core.autocompletion.Banks.get_by_iban( bankaccount.iban )
+        if bank:
+            bankaccount.bank = bank.name
+            bankaccount.bic = bank.bic
         self.emit( "changed" )
     def bankaccounts_bic_cellrenderertext_edited_cb( self, cellrenderer, path_string, new_text ):
         if self.signals_blocked: return
@@ -133,7 +137,9 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = BankaccountRowReference( model, Gtk.TreePath( path_string ) )
         bankaccount = rowref.get_bankaccount()
         bankaccount.bic = new_text.strip()
-        # TODO: Autocompletion
+        bank = core.autocompletion.Banks.get_by_bic( bankaccount.bic )
+        if bank:
+            bankaccount.bank = bank.name
         self.emit( "changed" )
     def bankaccounts_bank_cellrenderertext_edited_cb( self, cellrenderer, path_string, new_text ):
         if self.signals_blocked: return
