@@ -21,6 +21,8 @@ class Configuration( object ):
             return os.path.join( os.environ['APPDATA'], CONFIG_DIRNAME )
         else:
             return os.path.expanduser( '~/.%s' % CONFIG_DIRNAME )
+    def options( self, section ):
+        return set( self.cp.options( section ) ).union( set( self.defaults.options( section ) ) )
     def get_config_filename( self ):
         return os.path.join( self.get_config_path(), CONFIG_FILENAME )
     def get( self, section, option ):
