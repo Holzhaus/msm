@@ -85,47 +85,6 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         self._filter = ""
         self._selection_blocked = False
         self._current_selection = None
-    def import_xml( self ):
-        """FIXME: REMOVE THIS"""
-        subscription_mapping = ( ( 1, 'Normalabo Position' ), ( 2, 'Soliabo Position' ) )
-        from lxml import etree
-        import dateutil.parser
-        import locale
-        tree = etree.parse( "/home/jan/Dokumente/SDAJ/POSITIONs-Verwaltung/daten/output.xml" )
-        root = tree.getroot()
-        for el_customer in root:
-            customer = core.database.Customer( el_customer.get( 'familyname' ), el_customer.get( 'prename' ) )
-            customer.company1 = el_customer.get( 'company' )
-            customer.honourific = el_customer.get( 'honourific' )
-            customer.title = el_customer.get( 'title' )
-            if el_customer.get( 'birthday' ):
-                customer.birthday = dateutil.parser.parse( el_customer.get( 'birthday' ), dayfirst=True ).date()
-            if el_customer.get( 'gender' ):
-                if el_customer.get( 'gender' ) == 'm':
-                    customer.gender = core.database.GenderType.Male
-                elif el_customer.get( 'gender' ) == 'f':
-                    customer.gender = core.database.GenderType.Female
-            address = None
-            for el_address in el_customer.find( 'addresses' ):
-                address = customer.add_address( el_address.get( 'street' ), el_address.get( 'zipcode' ), el_address.get( 'city' ), el_address.get( 'country' ) )
-            bankaccount = None
-            for el_bankaccount in el_customer.find( 'bankaccounts' ):
-                bankaccount = customer.add_bankaccount( el_bankaccount.get( 'iban' ), el_bankaccount.get( 'bic' ), el_bankaccount.get( 'name' ), "" )
-            for el_contract in el_customer.find( 'contracts' ):
-                startdate = dateutil.parser.parse( el_contract.get( 'startdate' ), dayfirst=True ).date()
-                enddate = dateutil.parser.parse( el_contract.get( 'enddate' ), dayfirst=True ).date() if el_contract.get( 'enddate' ) else None
-                subscription = None
-                for s_id, s_name in subscription_mapping:
-                    if el_contract.get( 'subscription' ) == s_name:
-                        subscription = core.database.Subscription.get_by_id( s_id, session=self.session )
-                try:
-                    value = locale.atof( el_contract.get( 'value' ) )
-                except ValueError:
-                    value = subscription.value
-                paymenttype = core.database.PaymentType.DirectWithdrawal if bankaccount is not None else core.database.PaymentType.Invoice
-                contract = customer.add_contract( subscription, startdate, enddate , value, paymenttype, address, address, bankaccount )
-            self.session.add( customer )
-        self.session.commit()
     """Data interaction"""
     def clear( self ):
         self.builder.get_object( "customers_liststore" ).clear()
