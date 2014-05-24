@@ -10,22 +10,61 @@ from core.config import Configuration
 csv.register_dialect( 'opengeodb', delimiter="\t", quoting=csv.QUOTE_NONE, skipinitialspace=False, quotechar='', doublequote=False )
 csv.register_dialect( 'semicolonsep', delimiter=";", quoting=csv.QUOTE_MINIMAL, skipinitialspace=False, quotechar='"', doublequote=False )
 class TaggedInfoStore:
+    """
+    An Object that stores objects and makes them accessible through their attributes. Should only be used through subclasses.
+    """
     def __init__( self, keys ):
+        """
+        __init__ function.
+        Arguments:
+            keys:
+                A list of attribute names that should be indexed
+        """
         self._data = {}
         self._keys = keys
     def load( self, tag, fname, fencoding='utf-8' ):
+        """
+        Opens file and loads the data into the given tag.
+        Arguments:
+            tag:
+                The tag the data will be stored in
+            fname:
+                The filename of the file that contains the data
+            fencoding:
+                The file encoding of the file
+        """
         getattr( self, "load_{}".format( tag ) )( fname, fencoding )
     def clear( self, tag=None ):
+        """
+        Clears all data. If tag is given, only clears data for this tag.
+        Arguments:
+            tag:
+                The tag to be cleared
+        """
         if tag is None:
             for tag in self._data:
                 self.clear_tag( tag )
         else:
             self.clear_tag( tag )
     def clear_tag( self, tag ):
+        """
+        Clears data for given tag.
+        Arguments:
+            tag:
+                The tag to be cleared
+        """
         if tag in self._data:
             for key in self._data[tag].keys():
                 self._data[tag][key].clear()
     def add( self, tag, obj ):
+        """
+        Adds an Object to a tag.
+        Arguments:
+            obj:
+                The object to be indexed
+            tag:
+                tag for this object
+        """
         if tag not in self._data:
             self._data[tag] = {}
             for key in self._keys:
@@ -33,6 +72,18 @@ class TaggedInfoStore:
         for key in self._data[tag].keys():
             self._data[tag][key][getattr( obj, key )] = obj
     def get( self, tag, key, value ):
+        """
+        Gets an object from tag where key has a specific value.
+        Arguments:
+            tag:
+                tag to search
+            key:
+                attribute name of object
+            tag:
+                attribute value of object
+        Returns:
+            object or None
+        """
         if tag in self._data:
             if key in self._data[tag]:
                 if value in self._data[tag][key]:
