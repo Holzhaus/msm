@@ -201,7 +201,7 @@ class CityInfoStore( TaggedInfoStore ):
                         obj = CityInfo( zipcode, name, lat, lon, tag )
                         self.add( tag, obj )
     def iso_zipcode_split( self, iso3661zipcode ):
-        if len( iso3661zipcode ) > 3:
+        if len( iso3661zipcode ) > 3 and '-' in iso3661zipcode:
             countrycode, zipcode = iso3661zipcode.split( '-', 2 )
             if len( countrycode ) == 2:
                 countrycode = countrycode.upper()
