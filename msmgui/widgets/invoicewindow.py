@@ -47,7 +47,7 @@ class InvoiceWindow( msmgui.widgets.base.RefreshableWindow ):
         """pdfs = []
         invoices = [] # FIXME
         for invoice in invoices:
-            pdfs.append( core.pdfgenerator.LetterGenerator.render_invoice( invoice ) )
+            pdfs.append( core.letterrenderer.LetterGenerator.render_invoice( invoice ) )
         self.add_status_message( ( "Eine Rechnung als PDF generiert." if len( pdfs ) == 1 else "%d Rechnungen als PDF generiert." % len( pdfs ) ) )"""
         """document = Poppler.Document.new_from_file( "file://" + filename, None )
         def edraw( widget, surface ):

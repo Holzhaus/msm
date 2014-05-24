@@ -5,7 +5,7 @@ import core.database
 from core.config import Configuration
 import locale
 import msmgui.rowreference
-import core.pdfgenerator
+import core.letterrenderer
 from msmgui.widgets.base import ScopedDatabaseObject
 
 class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
@@ -290,7 +290,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         model = treeview.get_model()
         rowref = InvoiceRowReference( model, path )
         invoice = rowref.get_invoice()
-        letter = core.pdfgenerator.Letter( invoice.contract, contents=[ invoice, ] )
+        letter = core.letterrenderer.Letter( invoice.contract, contents=[ invoice, ] )
         letter.preview()
     def invoices_treeview_selection_changed_cb( self, selection ):
         if self.selection_blocked:
