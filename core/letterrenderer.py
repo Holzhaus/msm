@@ -10,7 +10,7 @@ import threading
 import datetime
 import jinja2
 import core.database
-from core.lib.pdflatex import PdfGenerator
+from core.lib import pdflatex
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
@@ -137,7 +137,7 @@ class LetterRenderer:
         datadir = os.path.normpath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'data' ) )
         latexdir = os.path.join( datadir, 'templates', 'latex' )
         imagedir = os.path.join( datadir, 'images' )
-        PdfGenerator.latexstr_to_pdf( rendered_document, output_file, [latexdir, imagedir] )
+        pdflatex.compile_str( rendered_document, output_file, [latexdir, imagedir] )
     @staticmethod
     def _render_part( letter, obj ):
         templatevars = {'closing':'Mit freundlichen Grüßen',
