@@ -5,10 +5,8 @@ import os
 if __name__ == "__main__":
     sys.path = [os.path.abspath( '..' )] + sys.path
 import csv
-os.chdir( '..' )
 from core.autocompletion import Banks, Cities
 import core.lib.iban as iban
-os.chdir( 'tools' )
 try:
     from lxml import etree
     print( "running with lxml.etree" )

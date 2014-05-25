@@ -4,7 +4,7 @@ import sys
 from gi.repository import Gtk, Gio, GObject
 from gi.repository.GLib import GError
 import msmgui.main
-from core.config import Configuration
+from core.config import Config
 from core.database import Database
 from msmgui.dialogs.preferences import PreferencesDialog
 
@@ -37,7 +37,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
             data:
                 additional data passed to this function
         """
-        self.config = Configuration()
+        self.config = Config
         db_uri = self.config.get( "Database", "db_uri" )
         self.database = Database( db_uri )
         # Start building the GUI

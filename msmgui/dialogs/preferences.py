@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk
 import core.database
-import core.config
+from core.config import Config
 from msmgui.widgets.magazinemanager import MagazineManager
 from msmgui.widgets.base import ScopedDatabaseObject
 class PreferencesDialog( ScopedDatabaseObject ):
@@ -38,8 +38,8 @@ class PreferencesDialog( ScopedDatabaseObject ):
         self.builder.get_object( 'general_database_version_label' ).set_text( version )
         self.builder.get_object( 'general_database_data_label' ).set_text( data )
 
-        self.builder.get_object( 'general_bic_open_entry' ).set_text( core.config.Configuration().get( "Autocompletion", "bic_file" ) )
-        self.builder.get_object( 'general_zipcode_open_entry' ).set_text( core.config.Configuration().get( "Autocompletion", "zipcode_file" ) )
+        self.builder.get_object( 'general_bic_open_entry' ).set_text( Config.get( "Autocompletion", "bic_file" ) )
+        self.builder.get_object( 'general_zipcode_open_entry' ).set_text( Config.get( "Autocompletion", "zipcode_file" ) )
 
         self._magazinemanager.start_edit()
 
@@ -105,8 +105,8 @@ class PreferencesDialog( ScopedDatabaseObject ):
     def response_cb( self, dialog, response ):
         """Response Callback of the Gtk.Dialog"""
         if response == 1: # Save new config values
-            core.config.Configuration().set( "Autocompletion", "bic_file", self.builder.get_object( 'general_bic_open_entry' ).get_text() )
-            core.config.Configuration().set( "Autocompletion", "zipcode_file", self.builder.get_object( 'general_zipcode_open_entry' ).get_text() )
+            Config.set( "Autocompletion", "bic_file", self.builder.get_object( 'general_bic_open_entry' ).get_text() )
+            Config.set( "Autocompletion", "zipcode_file", self.builder.get_object( 'general_zipcode_open_entry' ).get_text() )
             self._session.commit()
         else: # Discard new config values
             self._session.rollback()

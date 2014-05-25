@@ -6,7 +6,7 @@ import itertools
 import io
 import locale
 
-from core.config import Configuration
+from core.config import Config
 csv.register_dialect( 'opengeodb', delimiter="\t", quoting=csv.QUOTE_NONE, skipinitialspace=False, quotechar='', doublequote=False )
 csv.register_dialect( 'semicolonsep', delimiter=";", quoting=csv.QUOTE_MINIMAL, skipinitialspace=False, quotechar='"', doublequote=False )
 class TaggedInfoStore:
@@ -290,9 +290,9 @@ Cities = CityInfoStore()
 def reload_data():
     global Banks
     global Cities
-    for option in Configuration().options( 'Autocompletion' ):
+    for option in Config.options( 'Autocompletion' ):
         if option.startswith( 'bic_file_' ) or option.startswith( 'zipcode_file_' ):
-            filename = Configuration().get( 'Autocompletion', option )
+            filename = Config.getfilepath( 'Autocompletion', option )
             if os.path.exists( filename ):
                 if option.startswith( 'bic_file_' ):
                     tag = option[9:].upper()

@@ -31,7 +31,7 @@ except ImportError:
                 except ImportError:
                     print( "Failed to import ElementTree from any known place" )
 import dateutil.parser
-import core.config
+from core.config import Config
 import core.database
 def import_xml( session, filename ):
     subscription_mapping = ( ( 1, 'Normalabo Position' ), ( 2, 'Soliabo Position' ) )
@@ -86,8 +86,7 @@ if __name__ == "__main__":
     if not os.path.exists( filename ):
         print( "File '{}' does not exist".format( filename ) )
         sys.exit( 2 )
-    os.chdir( '..' )
-    db_uri = core.config.Configuration().get( "Database", "db_uri" )
+    db_uri = Config.get( "Database", "db_uri" )
     database = core.database.Database( db_uri )
     session = core.database.Database.get_scoped_session()
     import_xml( session, filename )

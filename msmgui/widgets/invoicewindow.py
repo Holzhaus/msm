@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf
-from core.config import Configuration
+from core.config import Config
 import msmgui.widgets.invoicetable
 import datetime
 import core.database
@@ -28,7 +28,7 @@ class InvoiceWindow( msmgui.widgets.base.RefreshableWindow ):
 
         self._letterexportassistant = msmgui.assistants.letterexport.LetterExportAssistant()
 
-        active_only = Configuration().getboolean( "Interface", "active_only" )
+        active_only = Config.getboolean( "Interface", "active_only" )
         if not active_only:
             self.builder.get_object( "invoices_showall_switch" ).set_active( not active_only )
     def invoicetable_selection_changed_cb( self, table ):

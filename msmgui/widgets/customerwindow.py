@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf, GLib
-from core.config import Configuration
+from core.config import Config
 import msmgui.widgets.customereditor
 import msmgui.widgets.customertable
 import msmgui.widgets.base
@@ -27,7 +27,7 @@ class CustomerWindow( msmgui.widgets.base.RefreshableWindow ):
 
         self.builder.get_object( "tablebox" ).add( self._customertable )
         self._customertable.connect( "selection-changed", self.customertable_selection_changed_cb )
-        active_only = Configuration().getboolean( "Interface", "active_only" )
+        active_only = Config.getboolean( "Interface", "active_only" )
         if not active_only:
             self.builder.get_object( "customers_showall_switch" ).set_active( not active_only )
     """Callbacks"""

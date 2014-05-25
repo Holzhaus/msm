@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject, GLib
 import core.database
-from core.config import Configuration
+from core.config import Config
 import locale
 import msmgui.rowreference
 import core.letterrenderer
@@ -181,7 +181,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
             raise TypeError( "Expected bool, not {}".format( type( value ).__name__ ) )
         if self._active_only != value:
             self._active_only = value
-            Configuration().set( "Interface", "active_only", self._active_only )
+            Config.set( "Interface", "active_only", self._active_only )
             GLib.idle_add( self.refilter )
     def _is_row_visible( self, model, treeiter, data=None ):
         rowref = InvoiceRowReference( model, model.get_path( treeiter ) )

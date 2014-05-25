@@ -59,3 +59,4 @@ class Configuration( object ):
         if f:
             self.cp.write( f )
             f.close()
+Config = Configuration()
