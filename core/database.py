@@ -2,46 +2,60 @@
 # -*- coding: utf-8 -*-
 import decimal
 import locale
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import event, orm, create_engine, func, sql
+import datetime
+import random
+import string
+import re
+import sqlalchemy
+from sqlalchemy import create_engine, func
 from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Text, Date, ForeignKey
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
-Base = declarative_base()
-import datetime, random, string, re
+from sqlalchemy.ext.declarative import declarative_base
 from core.errors import InvoiceError
+
+Base = declarative_base()
 
 zipcodes = {}
 bankcodes = {}
 Session = None
 
-import sqlalchemy
-import weakref
-transactions_with_flushes = weakref.WeakSet()
-
-@sqlalchemy.event.listens_for( sqlalchemy.orm.session.Session, "after_flush" )
-def log_transaction( session, flush_context ):
-    for trans in session.transaction._iterate_parents():
-        transactions_with_flushes.add( trans )
-
-def session_has_pending_commit( session ):
-    return session.transaction in transactions_with_flushes
-
 class Database( object ):
+    """
+    Database object.
+    """
     session_factory = None
     def _scopefunc( self ):
-        """ Needed as scopefunc argument for the scoped_session"""
+        """
+        Needed as scopefunc argument for the scoped_session.
+        Returns:
+            this instance.
+        """
         return self
-    def __init__( self, database ):
+    def __init__( self, db_uri ):
+        """
+        Initializes the Database.
+        Args:
+            db_uri:
+                db_uri of the database
+        """
         global Session
-        Database._database = database
-        Database._engine = create_engine( self._database )
-        print( "db:", database )
+        Database._uri = db_uri
+        print( "Connecting to:", db_uri )
+        Database._engine = create_engine( self._uri )
         metadata = Base.metadata
         metadata.create_all( self._engine ) # create tables in database
         Database.session_factory = sessionmaker( bind=self._engine, autoflush=False )
         Session = Database.get_scoped_session( self._scopefunc )
     @staticmethod
     def get_scoped_session( scope_function=None ):
+        """
+        Creates a scoped sessionmaker instance.
+        Args:
+            scope_function:
+                a scope_function that will be used for determining the scope of the session. If None, the session will be thread-local.
+        Returns:
+            a scoped sessionmaker instance.
+        """
         if Database.session_factory is None:
             raise RuntimeError( "Database has to be initialized first." )
         if scope_function:
@@ -51,152 +65,24 @@ class Database( object ):
         return scoped_session_obj
     @staticmethod
     def get_engine_info():
-        name = Database._database
+        """
+        Retrieves information about the database.
+        Returns:
+            a 3-value-tuple containing db uri, engine driver and driver version in that order
+        """
+        name = Database._uri
         driver = Database._engine.driver
         version = Database._engine.dialect.server_version_info
         return ( name, driver, version )
-    """@staticmethod
-    def clearCustomers():
-        # Can't use this because of cascades: Session().query( Customer ).delete()
-        for customer in Database.getCustomers():
-            Session().delete( customer )
-    @staticmethod
-    def getContracts():
-        return Session().query( Contract ).order_by( Contract.customer_id )
-    @staticmethod
-    def importCustomers( filename ):
-        data = io.SubscriptionManagerIO.csvimport( filename );
-        count = 0
-        for row in data:
-            # Adresses
-            addressdata = row.pop( 'addressdata' ) if 'addressdata' in row else None
-            # Contracts
-            contractdata = row.pop( 'contractdata' ) if 'contractdata' in row else None
-            # Basic customer information
-            if ( set( ( 'prename', 'familyname' ) ) <= row.keys() and row['prename'] and row['familyname'] ) or ( 'company1' in row.keys() and row['company1'] ):
-                if 'honourific' not in row: row['honourific'] = ""
-                if 'title' not in row:      row['title'] = ""
-                if 'birthday' not in row:   row['birthday'] = None
-                if 'sex' not in row:        row['sex'] = ""
-                if 'company1' not in row:   row['company1'] = ""
-                if 'company2' not in row:   row['company2'] = ""
-                if 'department' not in row: row['department'] = ""
-                if self.addCustomer( row['familyname'], row['prename'], row['honourific'], row['title'], row['birthday'], row['sex'], row['company1'], row['company2'], row['department'], addressdata, contractdata ):
-                    count += 1
-        return count
-        pass
-    def importBankTransactions( self, filename ):
-        pass
-        transactions = SubscriptionManagerIO.SpardaBankTransactionXLSImporter.readFile( filename )
-        if transactions:
-            for t in transactions:
-                if t['value'] < 0:
-                    entry = Debit( t['booking_date'], abs( t['value'] ), t['reference'] )
-                    q = Session().query( Debit )
-                else:
-                    entry = Credit( t['booking_date'], abs( t['value'] ), t['reference'] )
-                    q = Session().query( Credit )
-                if entry:
-                    contract = Contract.scanReferenceForContract( t['reference'] )
-                    if contract:
-                        entry.contract_id = contract.id
-                    if q.filter_by( date=entry.date, value=entry.value, description=entry.description, contract_id=entry.contract_id ).count() == 0:
-                        Session().add( entry )
-                    else:
-                        print( entry, "already in database" )
-    def exportShippingData( self, filename, date=datetime.date.today() ):
-        shippingdata = []
-        for contract in self.getContracts():
-            if contract.isRunning( date ):
-                row = {'familyname': contract.customer.familyname,
-                       'prename': contract.customer.prename,
-                       'honourific': contract.customer.honourific,
-                       'title': contract.customer.title,
-                       'gender': contract.customer.gender,
-                       'company1': contract.customer.company1,
-                       'company2': contract.customer.company2,
-                       'department': contract.customer.department,
-                       'co': contract.shippingaddress.co,
-                       'street': contract.shippingaddress.street,
-                       'zipcode': contract.shippingaddress.zipcode,
-                       'city': contract.shippingaddress.city,
-                       'country': contract.shippingaddress.countrycode}
-                shippingdata.append( row )
-        shippingdata.sort( key=operator.itemgetter( 'zipcode', 'familyname', 'prename' ) )
-        return SubscriptionManagerIO.SubscriptionManagerIO.csvexport( filename, shippingdata )
-    def exportBankTransactions( self, filename, type='DTA', creation_date=datetime.date.today(), execution_date=datetime.date.today() ):
-        if not creation_date or not execution_date or creation_date > execution_date or ( execution_date - execution_date ) > datetime.timedelta( days=15 ):
-            raise ValueError( "invalid dates" )
-        transactions = []
-        for customer in self.getCustomers():
-            for contract in customer.contracts:
-                if contract.paymenttype == PaymentType.DirectWithdrawal:
-                    balance = contract.getActiveEntries( execution_date )[0]
-                    if balance >= 0.0:
-                        continue
-                    if type == 'DTA':
-                        from DTAUS import DTAUS
-                        transactions.append( ( DTAUS.TransactionType.LK, customer.id, customer.name, contract.bankaccount.number, contract.bankaccount.bankcode, contract.bankaccount.bankname, balance, "POSITION, Vertragsnr. %s" % contract.refid ) )
-        if type == 'DTA':
-            accountowner = "POSITION e.V."
-            accountnumber = "192837465"
-            bankcode = "36060591"
-            bankname = "Sparda-Bank West eG"
-            reference = "Dies ist ein TeST"
-            print( SubscriptionManagerIO.SubscriptionManagerIO.export_dta( filename, transactions, accountowner, accountnumber, bankcode, bankname, reference ) )
-    def loadZipcodes( self, filename ):
-        global zipcodes
-        zipcodes = SubscriptionManagerIO.SubscriptionManagerIO.load_opengeodb_zipcodes( filename );
-    def loadBankcodes( self, filename ):
-        global bankcodes
-        bankcodes = SubscriptionManagerIO.SubscriptionManagerIO.load_bundesbank_bankcodes( filename );
-
-    def getAddressById( self, address_id ):
-        q = Session().query( Address ).filter_by( id=address_id )
-        return q.first() if q else None
-    def getBankaccountById( self, bankaccount_id ):
-        q = Session().query( Bankaccount ).filter_by( id=bankaccount_id )
-        return q.first() if q else None
-    def getContractById( self, contract_id ):
-        q = Session().query( Contract ).filter_by( id=contract_id )
-        return q.first() if q else None
-    def getMagazineById( self, magazine_id ):
-        q = Session().query( Magazine ).filter_by( id=magazine_id )
-        return q.first() if q else None
-    def getSubscriptionById( self, subscription_id ):
-        q = Session().query( Subscription ).filter_by( id=subscription_id )
-        return q.first() if q else None
-    def getIssueById( self, issue_id ):
-        q = Session().query( Issue ).filter_by( id=issue_id )
-        return q.first() if q else None
-    def addMagazine( self, name, issues_per_year ):
-        magazine = Magazine( name, issues_per_year )
-        Session().add( magazine )
-        return magazine
-    def delete( self, obj, flush=True ):
-        Session().delete( obj )
-        if flush:
-            self.flush()
-    def flush( self ):
-        Session().flush()
-    def session_changed( self ):
-        print( Session().dirty )
-        print( Session().deleted )
-        return True
-    def save( self ):
-        Session().flush()
-        rollback = False
-        try:
-            Session().commit()
-        except Exception as e:
-            Session().rollback();
-            print( "FIX" + "ME:", type( e ), e.args )
-            rollback = True
-        return not rollback
-        return False"""
 class GenderType:
+    """
+    GenderType Enum.
+    """
     Undefined, Male, Female, Queer = range( 4 )
 class PaymentType:
+    """
+    PaymentType Enum.
+    """
     DirectWithdrawal, Invoice = range( 2 )
 class Customer( Base ):
     __tablename__ = 'customers'
@@ -264,18 +150,6 @@ class Customer( Base ):
             if not isinstance( session, type( Session ) ):
                 raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
         return list( session().query( Customer ).order_by( Customer.id ) )
-    """@staticmethod
-    def add( self, familyname, prename, honourific, title, birthday, gender, company1, company2, department,
-                     flush=True ):
-        if gender not in [GenderType.Undefined, GenderType.Male, GenderType.Female, GenderType.Queer]:
-            gender = GenderType.Undefined
-        customer = Customer( familyname, prename, honourific, title, birthday, gender, company1, company2, department )
-        if customer:
-            Session().add( customer )
-            if flush:
-                Session().flush()
-            return customer
-        return None"""
     def __init__( self, familyname, prename, honourific="Herr", title="", birthday=None, gender=GenderType.Undefined, company1="", company2="", department="" ):
         # if not ( familyname or company1 ):
         #     raise ValueError
@@ -383,20 +257,11 @@ class Magazine( Base ):
         result = []
         for issue in self.issues:
             if issue_id is not None and issue.id != issue_id: continue
-            if startdate is not None and issue.date < startdate: continue
-            if enddate is not None and issue.date > enddate: continue
+            if startdate is not None and issue.date < startdate: continue # FIXME: use shipment_date instead
+            if enddate is not None and issue.date > enddate: continue # FIXME: use shipment_date instead
             result.append( issue )
         result = result[:limit] if limit is not None else result
         return result
-        """if issue_id:
-            query = query.filter_by( id=issue_id )
-        if startdate:
-            query = query.filter( Issue.date >= startdate ) # FIXME: use shipment_date instead
-        if enddate:
-            query = query.filter( Issue.date <= enddate ) # FIXME: use shipment_date instead
-        query = query.order_by( Issue.date )
-        query = query[:limit] if limit != None else query.all()
-        return query"""
     @staticmethod
     def get_all( session=None ):
         if session is None:
@@ -492,15 +357,6 @@ class Bankaccount( Base ):
                 raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
         q = session().query( Bankaccount ).filter_by( id=bankaccount_id )
         return q.first() if q else None
-    @staticmethod
-    def get_bank_by_bic( bic ):
-        raise NotImplementedError
-        """if bank and bank and bankcode in bankcodes:
-                return bankcodes[bankcode]"""
-        return ""
-    @staticmethod
-    def get_bic_by_iban( bic ):
-        raise NotImplementedError
     @staticmethod
     def count():
         return Session().query( func.count( Bankaccount.id ) ).scalar()
