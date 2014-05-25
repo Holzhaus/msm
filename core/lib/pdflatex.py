@@ -2,24 +2,31 @@
 # -*- coding: utf-8 -*-
 import os
 import shutil
+import platform
 import tempfile
 import subprocess
 from core.errors import LatexError
 class PdfGenerator():
     @staticmethod
-    def latexstr_to_pdf( latexstr, output_file='/tmp/output.pdf' ):
+    def latexstr_to_pdf( latexstr, output_file='/tmp/output.pdf', texinputs=[] ):
         f = tempfile.NamedTemporaryFile( delete=False )
         f.write( bytes( latexstr, 'UTF-8' ) )
         f.close()
-        PdfGenerator.pdflatex( f.name , output_file )
+        PdfGenerator.pdflatex( f.name , output_file, texinputs )
         os.remove( f.name )
     @staticmethod
-    def pdflatex( latexfile, output_file ):
+    def pdflatex( latexfile, output_file, texinputs=[] ):
         jobname = 'document'
         env = os.environ.copy()
         if not 'TEXINPUTS' in env:
             env['TEXINPUTS'] = ''
-        env['TEXINPUTS'] = ':'.join( [os.path.abspath( 'data/templates/latex' ), env['TEXINPUTS']] )
+        if type( texinputs ) is not list:
+            if type( texinputs ) is str:
+                texinputs = [ texinputs ]
+            else:
+                texinputs = list( texinputs )
+        env['TEXINPUTS'] = os.pathsep.join( texinputs + [ env['TEXINPUTS'] ] )
+        print( 'TEXINPUTS', env['TEXINPUTS'] )
         with tempfile.TemporaryDirectory() as tmpdirname:
             cmd = ['pdflatex',
                    '-halt-on-error',

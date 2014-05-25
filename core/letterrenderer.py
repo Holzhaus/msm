@@ -134,7 +134,10 @@ class LetterRenderer:
     def render_prerendered_letters( prerendered_letters, output_file ):
         template = template_env.get_template( "{}.template".format( "base" ) )
         rendered_document = template.render( {'prerendered_letters':prerendered_letters} )
-        PdfGenerator.latexstr_to_pdf( rendered_document, output_file )
+        datadir = os.path.normpath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'data' ) )
+        latexdir = os.path.join( datadir, 'templates', 'latex' )
+        imagedir = os.path.join( datadir, 'images' )
+        PdfGenerator.latexstr_to_pdf( rendered_document, output_file, [latexdir, imagedir] )
     @staticmethod
     def _render_part( letter, obj ):
         templatevars = {'closing':'Mit freundlichen Grüßen',
