@@ -43,11 +43,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
         self.database = Database( db_uri )
         # Start building the GUI
         builder = Gtk.Builder()
-        try: # get the file (if it is there)
-            builder.add_from_file( "data/ui/menu.ui" )
-        except GError:
-            print( "file not found" )
-            sys.exit()
+        builder.add_from_file( "data/ui/menu.ui" )
         # We use the method Gtk.Application.set_menubar(menubar) to
         # add the menubar to the application (Note: NOT the window!)
         self.set_menubar( builder.get_object( "menubar" ) )
