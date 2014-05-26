@@ -13,34 +13,51 @@ from core.lib import pdflatex
 from core.lib import threadqueue
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
-LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
-              ( re.compile( r'([{}_#%&$])' ), r'\\\1' ),
-              ( re.compile( r'~' ), r'\~{}' ),
-              ( re.compile( r'\^' ), r'\^{}' ),
-              ( re.compile( r'"' ), r"''" ),
-              ( re.compile( r'\.\.\.+' ), r'\\ldots' ),
-              ( re.compile( r'€' ), r'\\euro\{\}' ) )
-NEWLINE_SUB = ( re.compile( r'\n' ), r'{\\newline}' )
-def _escape_tex( value ):
-    newval = value
-    for pattern, replacement in LATEX_SUBS:
-        newval = pattern.sub( replacement, newval )
+class LatexEnvironment( jinja2.Environment ):
+    LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
+                   ( re.compile( r'([{}_#%&$])' ), r'\\\1' ),
+                   ( re.compile( r'~' ), r'\~{}' ),
+                   ( re.compile( r'\^' ), r'\^{}' ),
+                   ( re.compile( r'"' ), r"''" ),
+                   ( re.compile( r'\.\.\.+' ), r'\\ldots' ) )
+    NEWLINE_SUB = ( re.compile( r'\n' ), r'{\\newline}' )
+    def escape_tex( self, value ):
+        newval = value
+        for pattern, replacement in self.__class__.LATEX_SUBS:
+            newval = pattern.sub( replacement, newval )
         return newval
-def _escape_nl( value ):
-    pattern, replacement = NEWLINE_SUB
-    newval = pattern.sub( replacement, value )
-    return newval
-template_env = jinja2.Environment( loader=jinja2.FileSystemLoader( 'data/templates' ) )
-template_env.block_start_string = '((*'
-template_env.block_end_string = '*))'
-template_env.variable_start_string = '((('
-template_env.variable_end_string = ')))'
-template_env.comment_start_string = '((='
-template_env.comment_end_string = '=))'
-template_env.filters['escape_tex'] = _escape_tex
-template_env.filters['escape_nl'] = _escape_nl
+    def escape_nl( self, value ):
+        pattern, replacement = self.__class__.NEWLINE_SUB
+        newval = pattern.sub( replacement, value )
+        return newval
+    def __init__( self, template_path ):
+        super().__init__( loader=jinja2.FileSystemLoader( template_path ) )
+        self.block_start_string = '((*'
+        self.block_end_string = '*))'
+        self.variable_start_string = '((('
+        self.variable_end_string = ')))'
+        self.comment_start_string = '((='
+        self.comment_end_string = '=))'
+        self.filters['escape_tex'] = self.escape_tex
+        self.filters['escape_nl'] = self.escape_nl
+env_latex = LatexEnvironment( 'data/templates' )
 
-class PrerenderThread( threadqueue.AbstractQueueThread ):
+class AbstractRendererThread( threadqueue.AbstractQueueThread ):
+    __metaclass__ = abc.ABCMeta
+    def __init__( self, template_env ):
+        self._template_env = template_env
+        super().__init__()
+class AbstractRendererQueue( threadqueue.AbstractQueue ):
+    __metaclass__ = abc.ABCMeta
+    def __init__( self, template_env, num_worker_threads=None ):
+        self._template_env = template_env
+        super().__init__( num_worker_threads )
+    @abc.abstractmethod
+    def _create_thread( self ):
+        super()._create_thread( self )
+class PrerenderThread( AbstractRendererThread ):
+    def __init__( self, template_env ):
+        super().__init__( template_env )
     def run( self ):
         self._session = core.database.Database.get_scoped_session()
         super().run()
@@ -88,17 +105,17 @@ class PrerenderThread( threadqueue.AbstractQueueThread ):
                             'value':locale.currency( entry.value ),
                             'description':entry.description} )
         templatevars['entries'] = entries
-        template = template_env.get_template( "{}.template".format( "invoice" ) )
+        template = self._template_env.get_template( "{}.template".format( "invoice" ) )
         return template.render( templatevars )
     def _prerender_note( self, generic_templatevars, note ):
         templatevars = generic_templatevars.copy()
         templatevars.update( {'subject': note.subject,
-                              'text': template_env.from_string( note.text ).render( templatevars ) } )
-        template = template_env.get_template( "{}.template".format( "note" ) )
+                              'text': self._template_env.from_string( note.text ).render( templatevars ) } )
+        template = self._template_env.get_template( "{}.template".format( "note" ) )
         return template.render( templatevars )
-class PrerenderQueue( threadqueue.AbstractQueue ):
+class PrerenderQueue( AbstractRendererQueue ):
     def _create_thread( self ):
-        return PrerenderThread()
+        return PrerenderThread( self._template_env )
 from msmgui.widgets.base import ScopedDatabaseObject
 class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
     """
@@ -118,25 +135,30 @@ class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
         queue = PrerenderQueue()
         queue.put_multiple( letters )
         super().__init__( queue )
-class ComposeAndPrerenderThread( PrerenderThread ):
-    def __init__( self, lettercomposition ):
+class ComposeAndPrerenderThread( AbstractRendererThread ):
+    def __init__( self, template_env, lettercomposition ):
+        super().__init__( template_env )
         self._lettercomposition = lettercomposition
-        super().__init__()
     def work( self, unmerged_contract ):
         contract = self._session.merge( unmerged_contract ) # add them to the local session
         letter = self._lettercomposition.compose( contract )
         if letter.has_contents():
             return super().work( letter )
-class ComposeAndPrerenderQueue( threadqueue.AbstractQueue ):
-    def __init__( self, lettercomposition ):
+class ComposeAndPrerenderQueue( AbstractRendererQueue ):
+    def __init__( self, template_env, lettercomposition ):
+        super().__init__( template_env )
         self._lettercomposition = lettercomposition
-        super().__init__()
     def _create_thread( self ):
         return ComposeAndPrerenderThread( self._lettercomposition )
 class AbstractRenderer( threadqueue.QueueWatcherThread ):
     __metaclass__ = abc.ABCMeta
+    def _get_template_env( self, template_env ):
+        return template_env if template_env is not None else env_latex
+    def __init__( self, q, template_env=None ):
+        self._template_env = self._get_template_env( template_env )
+        super().__init__( q )
     def on_finished( self, rendered_letters ):
-        template = template_env.get_template( "{}.template".format( "base" ) )
+        template = self._template_env.get_template( "{}.template".format( "base" ) )
         if len( rendered_letters ) == 0:
             raise ValueError( "No rendered letters" )
         rendered_document = template.render( {'prerendered_letters':rendered_letters} )
@@ -145,16 +167,18 @@ class AbstractRenderer( threadqueue.QueueWatcherThread ):
         imagedir = os.path.join( datadir, 'images' )
         pdflatex.compile_str( rendered_document, self._output_file, [latexdir, imagedir] )
 class LetterRenderer( AbstractRenderer ):
-    def __init__( self, output_file, letters ):
-        queue = PrerenderQueue()
+    def __init__( self, output_file, letters, _template_env=None ):
+        template_env = self._get_template_env( _template_env )
+        queue = PrerenderQueue( template_env )
         queue.put_multiple( letters )
-        super().__init__( queue )
+        super().__init__( queue, template_env )
         self._output_file = output_file
 class ComposingRenderer( AbstractRenderer ):
-    def __init__( self, output_file, lettercomposition, contracts ):
-        queue = ComposeAndPrerenderQueue( lettercomposition )
+    def __init__( self, output_file, lettercomposition, contracts, _template_env=None ):
+        template_env = self._get_template_env( _template_env )
+        queue = ComposeAndPrerenderQueue( template_env, lettercomposition )
         queue.put_multiple( contracts )
-        super().__init__( queue )
+        super().__init__( queue, template_env )
         self._output_file = output_file
 class LetterPreviewRenderer( LetterRenderer ):
     """

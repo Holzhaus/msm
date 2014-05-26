@@ -20,7 +20,7 @@ class AbstractQueue:
         q.join()
     """
     __metaclass__ = abc.ABCMeta
-    def __init__( self, num_worker_threads=4 ):
+    def __init__( self, num_worker_threads=None ):
         # Create a single input and a single output queue for all threads.
         self._input_queue = queue.Queue()
         self._output_queue = queue.Queue()
@@ -28,6 +28,8 @@ class AbstractQueue:
         self._work_started = 0
         # Create the "thread pool"
         self._pool = []
+        if num_worker_threads is None:
+            num_worker_threads = 4
         for i in range( num_worker_threads ):
             thread = self._create_thread()
             thread.set_input_queue( self._input_queue )
