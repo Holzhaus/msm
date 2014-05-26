@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 from gi.repository import Gtk, Gdk, GObject, GdkPixbuf
-import msmgui.rowreference
 import core.database
+from core.lettercomposition import InvoicePlaceholder, Criterion
+import msmgui.rowreference
 TARGET_ENTRY_PYOBJECT = 0
 COLUMN_PYOBJECT, COLUMN_TEXT, COLUMN_PIXBUF = range( 3 )
 DRAG_ACTION = Gdk.DragAction.COPY
@@ -13,19 +14,6 @@ class LetterPartRowReference( msmgui.rowreference.GenericRowReference ):
             obj = row[0]
             return obj
 class LetterCompositor( Gtk.Box ):
-    class Criterion:
-        Always, OnlyOnInvoice, OnlyOnDirectWithdrawal = range( 3 )
-        @staticmethod
-        def get_text( criterion ):
-            if criterion is None or criterion == LetterCompositor.Criterion.Always:
-                text = "Immer"
-            elif criterion == LetterCompositor.Criterion.OnlyOnInvoice:
-                text = "Nur bei Bezahlung per Rechnung"
-            elif criterion == LetterCompositor.Criterion.OnlyOnDirectWithdrawal:
-                text = "Nur bei Bezahlung per Lastschrift"
-            return text
-    class InvoicePlaceholder:
-        pass
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, ( bool, ) )
     }
@@ -60,17 +48,16 @@ class DragArea( Gtk.IconView ):
         self.set_pixbuf_column( COLUMN_PIXBUF )
         model = Gtk.ListStore( GObject.TYPE_PYOBJECT, str, GdkPixbuf.Pixbuf )
         self.set_model( model )
-        self.add_item( LetterCompositor.InvoicePlaceholder() )
+        self.add_item( InvoicePlaceholder() )
         for note in core.database.Note.get_all():
             self.add_item( note )
         self.enable_model_drag_source( Gdk.ModifierType.BUTTON1_MASK, [], DRAG_ACTION )
         self.connect( "drag-data-get", self.drag_data_get_cb )
     def drag_data_get_cb( self, widget, drag_context, data, info, time ):
-        model = self.get_model()
         path = self.get_selected_items()[0]
         data.set( Gdk.Atom.intern( "MSMLetterPart", False ), 32, str( path ).encode( "utf-8" ) )
     def add_item( self, obj ):
-        if isinstance( obj, LetterCompositor.InvoicePlaceholder ):
+        if isinstance( obj, InvoicePlaceholder ):
             text = "Rechnungen"
             icon_name = "image-missing"
         else:
@@ -95,7 +82,7 @@ class DropArea( Gtk.Box ):
         self.builder.get_object( "name_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "name_cellrenderertext" ), self.name_cell_data_func )
         self.builder.get_object( "criterion_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "criterion_cellrenderercombo" ), self.criterion_cell_data_func )
         self.builder.get_object( "lettercomposition_treeview" ).set_reorderable( True )
-        criterions = [LetterCompositor.Criterion.Always, LetterCompositor.Criterion.OnlyOnInvoice, LetterCompositor.Criterion.OnlyOnDirectWithdrawal]
+        criterions = [Criterion.Always, Criterion.OnlyOnInvoice, Criterion.OnlyOnDirectWithdrawal]
         for criterion in criterions:
             self.builder.get_object( "criterion_liststore" ).append( [ "", criterion ] )
     def get_composition( self ):
@@ -122,7 +109,7 @@ class DropArea( Gtk.Box ):
         self.emit( "changed", len( dropmodel ) != 0 )
     def name_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         obj = model[treeiter][0]
-        if isinstance( obj, LetterCompositor.InvoicePlaceholder ):
+        if isinstance( obj, InvoicePlaceholder ):
             text = "Rechnungen"
         elif isinstance( obj, core.database.Note ):
             # TODO: Implement this properly
@@ -134,14 +121,14 @@ class DropArea( Gtk.Box ):
         cellrenderer.set_property( 'text', text )
     def criterion_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         criterion = model[treeiter][1]
-        text = LetterCompositor.Criterion.get_text( criterion )
+        text = Criterion.get_text( criterion )
         cellrenderer.set_property( 'text', text )
     def criterion_cellrenderercombo_editing_started_cb( self, combo, editable, path_string ):
         cellview = editable.get_child()
         renderer_text = cellview.get_cells()[0]
         cellview.set_cell_data_func( renderer_text, self.criterion_cell_data_func, None )
     def criterion_cellrenderercombo_changed_cb( self, combo, path_string, new_iter ):
-        criterion = LetterCompositor.Criterion.Always
+        criterion = Criterion.Always
         if isinstance( new_iter, Gtk.TreeIter ):
             combomodel = self.builder.get_object( "criterion_liststore" )
             criterion = combomodel[new_iter][1]

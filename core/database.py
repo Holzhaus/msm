@@ -563,6 +563,67 @@ class Contract( Base ):
         q = Session.query( func.count( Contract.id ) ).filter( Contract.customer_id == self.customer_id, Contract.id <= self.id ).order_by( Contract.id )
         return q.first()[0]
 
+class Letter( Base ):
+    __tablename__ = 'letters'
+    id = Column( Integer, primary_key=True )
+    contract_id = Column( None, ForeignKey( 'contracts.id' ) )
+    date = Column( Date, nullable=False )
+    contract = relationship( Contract, backref=backref( 'letters', order_by=date, cascade="all, delete" ) )
+    def __init__( self, contract, date=datetime.date.today(), contents=None ):
+        self.contract = contract
+        self.date = date
+        if contents:
+            for content in contents:
+                self.contents.append( content )
+    def add_content( self, content ):
+        self.contents.append( content )
+    def has_contents( self ):
+        return True if len( self.contents ) else False
+
+letter_association_table = Table( 'letter_association', Base.metadata,
+    Column( 'letter_id', Integer, ForeignKey( 'letters.id' ) ),
+    Column( 'letterpart_id', Integer, ForeignKey( 'letterparts.id' ) )
+ )
+
+class LetterPart( Base ):
+    __tablename__ = 'letterparts'
+    id = Column( Integer, primary_key=True )
+    name = Column( String( 50 ) )
+    type = Column( String( 50 ) )
+    __mapper_args__ = {
+        'polymorphic_identity':'letterparts',
+        'polymorphic_on':type
+    }
+    letters = relationship( Letter, secondary=letter_association_table, backref="contents", cascade="all" )
+
+class Note( LetterPart ):
+    __tablename__ = 'notes'
+    __mapper_args__ = {
+        'polymorphic_identity':'notes',
+    }
+    id = Column( Integer, ForeignKey( 'letterparts.id' ), primary_key=True )
+    subject = Column( String( 50 ) )
+    text = Column( Text )
+    def __init__( self, subject, text ):
+        self.subject = subject
+        self.text = text
+    @staticmethod
+    def get_all( session=None ):
+        if session is None:
+            session = Session
+        else:
+            if not isinstance( session, type( Session ) ):
+                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
+        return list( session().query( Note ).order_by( Note.subject ) )
+    @staticmethod
+    def count():
+        return Session().query( func.count( Note.id ) ).scalar()
+
+
+bkentry_association_table = Table( 'association', Base.metadata,
+    Column( 'invoice_id', Integer, ForeignKey( 'invoices.id' ) ),
+    Column( 'bookkeepingentry_id', Integer, ForeignKey( 'bookkeeping_entries.id' ) )
+ )
 class BookkeepingEntry( Base ):
     __tablename__ = 'bookkeeping_entries'
     id = Column( Integer, primary_key=True )
@@ -586,15 +647,12 @@ class BookkeepingEntry( Base ):
         if not self.customer or not self.contract or not self.date or not self.value or not self.description:
             return False
         return True
-
-association_table = Table( 'association', Base.metadata,
-    Column( 'invoice_id', Integer, ForeignKey( 'invoices.id' ) ),
-    Column( 'bookkeepingentry_id', Integer, ForeignKey( 'bookkeeping_entries.id' ) )
- )
-
-class Invoice( Base ):
+class Invoice( LetterPart ):
     __tablename__ = 'invoices'
-    id = Column( Integer, primary_key=True )
+    __mapper_args__ = {
+        'polymorphic_identity':'notes',
+    }
+    id = Column( Integer, ForeignKey( 'letterparts.id' ), primary_key=True )
     contract_id = Column( None, ForeignKey( 'contracts.id' ) )
     accounting_startdate = Column( Date, nullable=False )
     accounting_enddate = Column( Date, nullable=False )
@@ -602,7 +660,7 @@ class Invoice( Base ):
     maturity_date = Column( Date, nullable=False )
     number = Column( Integer )
     contract = relationship( Contract, backref=backref( 'invoices', order_by=date, cascade="all, delete" ) )
-    entries = relationship( BookkeepingEntry, secondary=association_table, backref="invoices", cascade="all, delete" )
+    entries = relationship( BookkeepingEntry, secondary=bkentry_association_table, backref="invoices", cascade="all, delete" )
     @property
     def value( self ):
         value = 0
@@ -687,23 +745,3 @@ class Invoice( Base ):
         if not self.contract or not self.date or not self.entries:
             return False
         return True
-
-class Note( Base ):
-    __tablename__ = 'notes'
-    id = Column( Integer, primary_key=True )
-    subject = Column( String( 50 ) )
-    text = Column( Text )
-    def __init__( self, subject, text ):
-        self.subject = subject
-        self.text = text
-    @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Note ).order_by( Note.subject ) )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Note.id ) ).scalar()

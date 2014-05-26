@@ -32,19 +32,25 @@ def compile_file( latexfile, output_file, texinputs=None ):
         texinputs:
             a list of additional paths to add to the TEXINPUTS environment variable before compiling (Defaults to None)
     """
-    jobname = 'document'
-    # Modify environment (if needed)
+    # Create Environment
     env = os.environ.copy()
-    if not 'TEXINPUTS' in env:
-        env['TEXINPUTS'] = ''
-    if texinputs is None:
+    # Modify environment (add $TEXINPUTS)
+    if type( texinputs ) is list:
+        new_texinputs = texinputs.copy()
+    else:
         new_texinputs = []
-    elif type( texinputs ) is not list:
-        if type( texinputs ) is str:
-            new_texinputs = [ texinputs ]
-        else:
-            new_texinputs = list( texinputs )
-    env['TEXINPUTS'] = os.pathsep.join( new_texinputs + [ env['TEXINPUTS'] ] )
+        if  type( texinputs ) is not None:
+            if type( texinputs ) is str:
+                new_texinputs = [ texinputs ]
+            else:
+                new_texinputs = list( texinputs )
+    if 'TEXINPUTS' in env and env['TEXINPUTS']:
+        new_texinputs += env['TEXINPUTS'].split( os.pathsep )
+    else:
+        new_texinputs += [''] # Empty string, so that a trailing os.pathsep will be added (this includes default data path)
+    env['TEXINPUTS'] = os.pathsep.join( new_texinputs )
+    # Specify filename of pdf output file
+    jobname = 'document'
     # Compile the file in a temporary directory (so we don't have to worry about cleaning up the auxiliary files after compilation)
     with tempfile.TemporaryDirectory() as tmp_dirname:
         cmd = ['pdflatex',
@@ -53,13 +59,17 @@ def compile_file( latexfile, output_file, texinputs=None ):
                '-jobname', jobname,
                '-output-directory', tmp_dirname,
                latexfile]
+        # Redirect pdflatex' stdout to tempfile (and show it if an error occurs)
         with tempfile.TemporaryFile() as out:
             latex = subprocess.call( cmd, env=env, stdout=out, stderr=subprocess.STDOUT )
             if latex != 0:
                 out.seek( 0 )
                 print( out.read().decode( "utf-8" ) )
                 raise LatexError()
-        # The file was compile successfully, now move the file out of the folder, so that it won't be deleted automatically
+        # Get the filename of the compiled pdf
         tmp_filename = jobname + os.extsep + 'pdf'
         tmp_filepath = os.path.join( tmp_dirname, tmp_filename )
+        if not os.path.exists( tmp_filepath ):
+            raise LatexError()
+        # The file was compile successfully, now move the file out of the folder, so that it won't be deleted automatically
         shutil.copy( tmp_filepath, output_file )

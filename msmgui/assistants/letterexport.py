@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject, GLib
-import core.database
-import msmgui.widgets.lettercompositor
-import datetime
-import threading
-from msmgui.widgets.lettercompositor import LetterCompositor
 import sqlalchemy.orm.session
+import core.database
+from core.letterrenderer import ComposingRenderer
+from core.lettercomposition import ContractLetterComposition
+import msmgui.widgets.lettercompositor
 from msmgui.widgets.base import ScopedDatabaseObject
 class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
     class Page:
@@ -63,86 +62,55 @@ class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
             page:
                 current page of the assistant
         """
-        class ThreadObject( GObject.GObject, threading.Thread ):
-            __gsignals__ = {
-                        'start': ( GObject.SIGNAL_RUN_FIRST, None, () ),
-                        'stop': ( GObject.SIGNAL_RUN_FIRST, None, ( int, int ) )
-            }
-            def __init__( self, lettercomposition, contracts, gui_objects ):
-                GObject.GObject.__init__( self )
-                threading.Thread.__init__( self )
-                self.contracts = contracts
-                self.lettercomposition = lettercomposition
-                self.gui_objects = gui_objects
-                self.letters = []
-            def contract_to_letter( self, contract ):
-                letter = core.letterrenderer.Letter( contract, date=datetime.date.today() )
-                for letterpart, criterion in self.lettercomposition:
-                    if criterion is None or criterion == LetterCompositor.Criterion.Always or \
-                    ( criterion == LetterCompositor.Criterion.OnlyOnInvoice and contract.paymenttype == core.database.PaymentType.Invoice ) or \
-                    ( criterion == LetterCompositor.Criterion.OnlyOnDirectWithdrawal and contract.paymenttype == core.database.PaymentType.DirectWithdrawal ):
-                        if type( letterpart ) is LetterCompositor.InvoicePlaceholder:
-                            for invoice in contract.invoices:
-                                letter.add_content( invoice )
-                        elif isinstance( letterpart, core.database.Note ):
-                            letter.add_content( letterpart )
-                    else:
-                        raise RuntimeError( "unknown type: %s", letterpart )
-                return letter
-            def run( self ):
-                GLib.idle_add( lambda: self._gui_start() )
-                local_session = core.database.Database.get_scoped_session()
-                num_contracts = len( self.contracts )
-                letters = []
-                for i, unmerged_contract in enumerate( self.contracts ):
-                    contract = local_session.merge( unmerged_contract ) # add them to the local session
-                    letter = self.contract_to_letter( contract )
-                    if letter.has_contents():
-                        letters.append( letter )
-                    if i % 100 == 0:
-                        text = "Stelle zusammen ({}/{})".format( i, num_contracts )
-                        GLib.idle_add( self._gui_update, text )
-                num_letters = len( letters )
-                prerendered_letters = []
-                for i, prerendered_letter in enumerate( core.letterrenderer.LetterRenderer.prerender( letters ) ):
-                    prerendered_letters.append( prerendered_letter )
-                    if i % 100 == 0:
-                        text = "Prerendering ({}/{})".format( i, num_letters )
-                        GLib.idle_add( self._gui_update, text )
-                output_file = "/tmp/exporttest.pdf"
-                GLib.idle_add( self._gui_update, "Finales Rendering..." )
-                core.letterrenderer.LetterRenderer.render_prerendered_letters( prerendered_letters, output_file )
-                local_session.expunge_all() # expunge everything afterwards
-                local_session.remove()
-                GLib.idle_add( lambda: self._gui_stop( num_letters, num_contracts ) )
+        class ThreadObject( ComposingRenderer ):
+            def __init__( self, lettercomposition, contracts, gui_objects, update_step=25 ):
+                output_file = '/tmp/export.pdf'
+                super().__init__( output_file, lettercomposition, contracts )
+                self._gui_spinner, self._gui_label, self._gui_assistant, self._gui_page = gui_objects
+                self._update_step = update_step
+            def on_start( self, work_left ):
+                text = "Starte ..."
+                GLib.idle_add( self._gui_start )
+                GLib.idle_add( self._gui_update, text )
+            def on_output( self, work_left, output ):
+                if self._update_step is not None:
+                    if not ( self.work_done % self._update_step == 0 or self.work_done == 1 ):
+                        return
+                text = "Prerendering ({}/{})".format( self.work_done, self.work_started )
+                GLib.idle_add( self._gui_update, text )
+            def on_finished( self, rendered_letters ):
+                GLib.idle_add( self._gui_update, "Finales Rendering... (bitte warten)" )
+                super().on_finished( rendered_letters )
+                num_letters = len( rendered_letters )
+                text = "Fertig! 1 Brief generiert!" if num_letters == 1 else "Fertig! {} Briefe generiert!".format( num_letters )
+                GLib.idle_add( self._gui_update, text )
+                GLib.idle_add( self._gui_stop )
             def _gui_start( self ):
-                spinner, label, assistant, page = self.gui_objects
-                label.set_text( "Starte Rendering..." )
-                spinner.start()
+                self._gui_spinner.start()
             def _gui_update( self, text ):
-                spinner, label, assistant, page = self.gui_objects
-                label.set_text( text )
-            def _gui_stop( self, num_letters, num_contracts ):
-                spinner, label, assistant, page = self.gui_objects
-                label.set_text( "Fertig! {} Briefe aus {} Verträgen generiert.".format( num_letters, num_contracts ) )
-                spinner.stop()
-                assistant.set_page_complete( page, True )
+                self._gui_label.set_text( text )
+            def _gui_stop( self ):
+                self._gui_spinner.stop()
+                self._gui_assistant.set_page_complete( self._gui_page, True )
+        # Collect GUI objects to be using during rendering
         assistant.set_page_complete( page, False )
         spinner = self.builder.get_object( "render_spinner" )
         label = self.builder.get_object( "render_label" )
         gui_objects = ( spinner, label, assistant, page )
+        # Remove stuff from the session so that it can be re-added in the thread
         self._session.close()
         contracts = core.database.Contract.get_all( session=self._session ) # We expunge everything, use it inside the thread and readd it later
         self._session.expunge_all()
-        lettercomposition = []
+        lettercomposition = ContractLetterComposition()
         for letterpart, criterion in self._lettercompositor.get_composition():
             if isinstance( letterpart, core.database.Note ):
                 object_session = sqlalchemy.orm.session.object_session( letterpart )
                 if object_session:
                     object_session.expunge( letterpart )
-            lettercomposition.append( ( letterpart, criterion ) )
-        threadobj = ThreadObject( lettercomposition, contracts, gui_objects )
-        threadobj.start()
+            lettercomposition.append( letterpart, criterion )
+        # Start the Thread
+        watcher = ThreadObject( lettercomposition, contracts, gui_objects )
+        watcher.start()
     # Callbacks
     def lettercompositor_changed_cb( self, lettercompositor, has_contents ):
         """

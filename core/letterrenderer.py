@@ -6,11 +6,11 @@ import subprocess
 import tempfile
 import re
 import locale
-import threading
-import datetime
 import jinja2
+import abc
 import core.database
 from core.lib import pdflatex
+from core.lib import threadqueue
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
@@ -21,12 +21,12 @@ LATEX_SUBS = ( ( re.compile( r'\\' ), r'\\textbackslash' ),
               ( re.compile( r'\.\.\.+' ), r'\\ldots' ),
               ( re.compile( r'€' ), r'\\euro\{\}' ) )
 NEWLINE_SUB = ( re.compile( r'\n' ), r'{\\newline}' )
-def escape_tex( value ):
+def _escape_tex( value ):
     newval = value
     for pattern, replacement in LATEX_SUBS:
         newval = pattern.sub( replacement, newval )
         return newval
-def escape_nl( value ):
+def _escape_nl( value ):
     pattern, replacement = NEWLINE_SUB
     newval = pattern.sub( replacement, value )
     return newval
@@ -37,43 +37,138 @@ template_env.variable_start_string = '((('
 template_env.variable_end_string = ')))'
 template_env.comment_start_string = '((='
 template_env.comment_end_string = '=))'
-template_env.filters['escape_tex'] = escape_tex
-template_env.filters['escape_nl'] = escape_nl
+template_env.filters['escape_tex'] = _escape_tex
+template_env.filters['escape_nl'] = _escape_nl
 
-class Letter:
-    def __init__( self, contract, date=datetime.date.today(), contents=None ):
-        self.contract = contract
-        self.date = date
-        if not contents:
-            contents = []
+class PrerenderThread( threadqueue.AbstractQueueThread ):
+    def run( self ):
+        self._session = core.database.Database.get_scoped_session()
+        super().run()
+        self._session.expunge_all() # expunge everything afterwards
+        self._session.remove()
+    def work( self, letter ):
+        letter = self._session.merge( letter )
+        return '\n'.join( list( self._prerender( letter ) ) )
+    def _prerender( self, letter ):
+        """ Generator function that prerenders a whole letter (yields it part by part). """
+        templatevars = {'closing':'Mit freundlichen Grüßen',
+                        'signature':'POSITION\nAbo-Service',
+                        'recipient':"%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
+                        'opening':letter.contract.customer.letter_salutation,
+                        'date':letter.date.strftime( '%d.~%m~%Y' ),
+                        'customer': letter.contract.customer,
+                        'contract': letter.contract}
+        for part in letter.contents:
+            prerendered_part = self._prerender_part( templatevars, part )
+            if prerendered_part:
+                yield prerendered_part
+    def _prerender_part( self, templatevars, part ):
+        """ function that prerenders a letter part. """
+        if isinstance( part, core.database.Invoice ):
+            rendered_text = self._prerender_invoice( templatevars, part )
+        elif isinstance( part, core.database.Note ):
+            rendered_text = self._prerender_note( templatevars, part )
         else:
-            contents = contents.copy()
-        self.contents = contents
-    def add_content( self, content ):
-        self.contents.append( content )
-    def has_contents( self ):
-        return True if len( self.contents ) else False
-    def save( self, output_filename ):
-        f = open( output_filename, "wb" )
-        self.render( f )
-    def render( self, output_file ):
-        LetterRenderer.render( self, output_file )
-    def preview( self ):
-        LetterRenderer.preview( self )
-class LetterRenderer:
-    @staticmethod
-    def preview( letter ):
-        """
-        Runs the default PDF viewer in a subprocess.Popen, and then calls the function
-        preview on exit when the subprocess completes.
-        """
+            raise TypeError( "Unknown letter part type" )
+        return rendered_text
+    # Rendering functions for the different parts
+    def _prerender_invoice( self, generic_templatevars, invoice ):
+        invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
+        templatevars = generic_templatevars.copy()
+        templatevars.update( { 'invoice_no': invoice_no,
+                               'subject':'Rechnung Nr. %s' % invoice_no,
+                               'subscription_name':invoice.contract.subscription.name,
+                               'magazine_name':invoice.contract.subscription.magazine.name,
+                               'total':locale.currency( invoice.value_left ),
+                               'maturity_date': invoice.maturity_date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+                             } )
+        entries = []
+        for i, entry in enumerate( invoice.entries ):
+            entries.append( {'position':str( i + 1 ),
+                            'value':locale.currency( entry.value ),
+                            'description':entry.description} )
+        templatevars['entries'] = entries
+        template = template_env.get_template( "{}.template".format( "invoice" ) )
+        return template.render( templatevars )
+    def _prerender_note( self, generic_templatevars, note ):
+        templatevars = generic_templatevars.copy()
+        templatevars.update( {'subject': note.subject,
+                              'text': template_env.from_string( note.text ).render( templatevars ) } )
+        template = template_env.get_template( "{}.template".format( "note" ) )
+        return template.render( templatevars )
+class PrerenderQueue( threadqueue.AbstractQueue ):
+    def _create_thread( self ):
+        return PrerenderThread()
+from msmgui.widgets.base import ScopedDatabaseObject
+class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
+    """
+    Usage:
+        watcher = PrerenderWatcher(letters)
+        watcher.start()
+        watcher.join()
+    """
+    def __init__( self, unmerged_letters ):
+        ScopedDatabaseObject.__init__( self )
+        letters = []
+        for unmerged_letter in unmerged_letters:
+            letter = self._session.merge( unmerged_letter )
+            letters.append( letter )
+        self._session.expunge_all()
+        self._session.remove()
+        queue = PrerenderQueue()
+        queue.put_multiple( letters )
+        super().__init__( queue )
+class ComposeAndPrerenderThread( PrerenderThread ):
+    def __init__( self, lettercomposition ):
+        self._lettercomposition = lettercomposition
+        super().__init__()
+    def work( self, unmerged_contract ):
+        contract = self._session.merge( unmerged_contract ) # add them to the local session
+        letter = self._lettercomposition.compose( contract )
+        if letter.has_contents():
+            return super().work( letter )
+class ComposeAndPrerenderQueue( threadqueue.AbstractQueue ):
+    def __init__( self, lettercomposition ):
+        self._lettercomposition = lettercomposition
+        super().__init__()
+    def _create_thread( self ):
+        return ComposeAndPrerenderThread( self._lettercomposition )
+class AbstractRenderer( threadqueue.QueueWatcherThread ):
+    __metaclass__ = abc.ABCMeta
+    def on_finished( self, rendered_letters ):
+        template = template_env.get_template( "{}.template".format( "base" ) )
+        if len( rendered_letters ) == 0:
+            raise ValueError( "No rendered letters" )
+        rendered_document = template.render( {'prerendered_letters':rendered_letters} )
+        datadir = os.path.normpath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'data' ) )
+        latexdir = os.path.join( datadir, 'templates', 'latex' )
+        imagedir = os.path.join( datadir, 'images' )
+        pdflatex.compile_str( rendered_document, self._output_file, [latexdir, imagedir] )
+class LetterRenderer( AbstractRenderer ):
+    def __init__( self, output_file, letters ):
+        queue = PrerenderQueue()
+        queue.put_multiple( letters )
+        super().__init__( queue )
+        self._output_file = output_file
+class ComposingRenderer( AbstractRenderer ):
+    def __init__( self, output_file, lettercomposition, contracts ):
+        queue = ComposeAndPrerenderQueue( lettercomposition )
+        queue.put_multiple( contracts )
+        super().__init__( queue )
+        self._output_file = output_file
+class LetterPreviewRenderer( LetterRenderer ):
+    """
+    Usage:
+        watcher = LetterPreviewRenderer(letter)
+        watcher.start()
+        watcher.join() # if needed
+    """
+    def __init__( self, letter ):
+        # Make a named tempfile, close it, and get the filename
         tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "pdf", delete=False )
-        filepath = tmp_file.name
+        tmp_filepath = tmp_file.name
         tmp_file.close()
-        letter.render( filepath )
-        thread = threading.Thread( target=LetterRenderer.show_viewer, args=( filepath, ), kwargs={'delete_file_after': True} )
-        thread.start()
-        # returns immediately after the thread starts
+        super().__init__( tmp_filepath, [letter] )
     @staticmethod
     def show_viewer( filepath, delete_file_after=False ):
         """
@@ -100,84 +195,6 @@ class LetterRenderer:
             subprocess.call( ["start", "/WAIT", filepath], stdout=FNULL, stderr=FNULL, shell=True )
         if delete_file_after:
             os.remove( filepath )
-    @staticmethod
-    def prerender_part( letter ):
-        """ Generator function that prerenders a letter part. """
-        for obj in letter.contents:
-            prerendered_text = LetterRenderer._render_part( letter, obj )
-            if prerendered_text:
-                yield prerendered_text
-    @staticmethod
-    def prerender( letters ):
-        """ Generator function that prerenders a whole letter. """
-        if type( letters ) == Letter:
-            letter_list = [letters]
-        else:
-            letter_list = letters
-        for letter in letter_list:
-            prerendered_parts = []
-            for prerendered_part in LetterRenderer.prerender_part( letter ):
-                prerendered_parts.append( prerendered_part )
-            yield '\n'.join( prerendered_parts )
-    @staticmethod
-    def render( letters, output_file ):
-        """
-        Takes a single letter or a list of letters and renderes them to output_file.
-        Shortcut for calling for calling LetterRenderer.prerender() as for loop and
-        then passing the result to LetterRenderer.render_prerendered_letters()
-        """
-        prerendered_letters = []
-        for prerendered_letter in LetterRenderer.prerender( letters ):
-            prerendered_letters.append( prerendered_letter )
-        LetterRenderer.render_prerendered_letters( prerendered_letters, output_file )
-    @staticmethod
-    def render_prerendered_letters( prerendered_letters, output_file ):
-        template = template_env.get_template( "{}.template".format( "base" ) )
-        rendered_document = template.render( {'prerendered_letters':prerendered_letters} )
-        datadir = os.path.normpath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'data' ) )
-        latexdir = os.path.join( datadir, 'templates', 'latex' )
-        imagedir = os.path.join( datadir, 'images' )
-        pdflatex.compile_str( rendered_document, output_file, [latexdir, imagedir] )
-    @staticmethod
-    def _render_part( letter, obj ):
-        templatevars = {'closing':'Mit freundlichen Grüßen',
-                        'signature':'POSITION\nAbo-Service',
-                        'recipient':"%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
-                        'opening':letter.contract.customer.letter_salutation,
-                        'date':letter.date.strftime( '%d.~%m~%Y' ),
-                        'customer': letter.contract.customer,
-                        'contract': letter.contract}
-        if isinstance( obj, core.database.Invoice ):
-            rendered_text = LetterRenderer._render_invoice( templatevars, obj )
-        elif isinstance( obj, core.database.Note ):
-            rendered_text = LetterRenderer._render_note( templatevars, obj )
-        else:
-            raise TypeError( "Unknown letter part type" )
-        return rendered_text
-    @staticmethod
-    def _render_invoice( generic_templatevars, invoice ):
-        invoice_no = "%s-%s" % ( invoice.contract.refid, invoice.number )
-        templatevars = generic_templatevars.copy()
-        templatevars.update( { 'invoice_no': invoice_no,
-                               'subject':'Rechnung Nr. %s' % invoice_no,
-                               'subscription_name':invoice.contract.subscription.name,
-                               'magazine_name':invoice.contract.subscription.magazine.name,
-                               'total':locale.currency( invoice.value_left ),
-                               'maturity_date': invoice.maturity_date.strftime( locale.nl_langinfo( locale.D_FMT ) )
-                             } )
-        entries = []
-        for i, entry in enumerate( invoice.entries ):
-            entries.append( {'position':str( i + 1 ),
-                            'value':locale.currency( entry.value ),
-                            'description':entry.description} )
-        templatevars['entries'] = entries
-        template = template_env.get_template( "{}.template".format( "invoice" ) )
-        return template.render( templatevars )
-    @staticmethod
-    def _render_note( generic_templatevars, note ):
-        templatevars = generic_templatevars.copy()
-        text = template_env.from_string( note.text ).render( templatevars )
-        templatevars.update( {'subject': note.subject,
-                              'text':text} )
-        template = template_env.get_template( "{}.template".format( "note" ) )
-        return template.render( templatevars )
+    def on_finished( self, rendered_letters ):
+        super().on_finished( rendered_letters )
+        self.__class__.show_viewer( self._output_file, delete_file_after=False )
