@@ -6,6 +6,7 @@ from gi.repository.GLib import GError
 import msmgui.main
 from core.config import Config
 from core.database import Database
+import msmgui.lib.exceptionhook
 from msmgui.dialogs.preferences import PreferencesDialog
 
 class MagazineSubscriptionManager( Gtk.Application ):
@@ -90,6 +91,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
             sys.exit()
 
 if __name__ == "__main__":
+    msmgui.lib.exceptionhook.install()
     GObject.threads_init() # Yup, we use threading in this application ;-)
     msmapp = MagazineSubscriptionManager()
     msmapp.run( None )
