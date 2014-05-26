@@ -588,7 +588,6 @@ letter_association_table = Table( 'letter_association', Base.metadata,
 class LetterPart( Base ):
     __tablename__ = 'letterparts'
     id = Column( Integer, primary_key=True )
-    name = Column( String( 50 ) )
     type = Column( String( 50 ) )
     __mapper_args__ = {
         'polymorphic_identity':'letterparts',
@@ -599,7 +598,7 @@ class LetterPart( Base ):
 class Note( LetterPart ):
     __tablename__ = 'notes'
     __mapper_args__ = {
-        'polymorphic_identity':'notes',
+        'polymorphic_identity':'note',
     }
     id = Column( Integer, ForeignKey( 'letterparts.id' ), primary_key=True )
     subject = Column( String( 50 ) )
@@ -650,7 +649,7 @@ class BookkeepingEntry( Base ):
 class Invoice( LetterPart ):
     __tablename__ = 'invoices'
     __mapper_args__ = {
-        'polymorphic_identity':'notes',
+        'polymorphic_identity':'invoice',
     }
     id = Column( Integer, ForeignKey( 'letterparts.id' ), primary_key=True )
     contract_id = Column( None, ForeignKey( 'contracts.id' ) )
