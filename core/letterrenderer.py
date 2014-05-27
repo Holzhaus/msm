@@ -11,6 +11,7 @@ import abc
 import core.database
 from core.lib import pdflatex
 from core.lib import threadqueue
+from msmgui.widgets.base import ScopedDatabaseObject
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 class LatexEnvironment( jinja2.Environment ):
@@ -42,11 +43,6 @@ class LatexEnvironment( jinja2.Environment ):
         self.filters['escape_nl'] = self.escape_nl
 env_latex = LatexEnvironment( 'data/templates' )
 
-class AbstractRendererThread( threadqueue.AbstractQueueThread ):
-    __metaclass__ = abc.ABCMeta
-    def __init__( self, template_env ):
-        self._template_env = template_env
-        super().__init__()
 class AbstractRendererQueue( threadqueue.AbstractQueue ):
     __metaclass__ = abc.ABCMeta
     def __init__( self, template_env, num_worker_threads=None ):
@@ -55,9 +51,11 @@ class AbstractRendererQueue( threadqueue.AbstractQueue ):
     @abc.abstractmethod
     def _create_thread( self ):
         super()._create_thread( self )
-class PrerenderThread( AbstractRendererThread ):
+class PrerenderThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
     def __init__( self, template_env ):
-        super().__init__( template_env )
+        threadqueue.AbstractQueueThread.__init__( self )
+        ScopedDatabaseObject.__init__( self )
+        self._template_env = template_env
     def run( self ):
         self._session = core.database.Database.get_scoped_session()
         super().run()
@@ -116,7 +114,6 @@ class PrerenderThread( AbstractRendererThread ):
 class PrerenderQueue( AbstractRendererQueue ):
     def _create_thread( self ):
         return PrerenderThread( self._template_env )
-from msmgui.widgets.base import ScopedDatabaseObject
 class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
     """
     Usage:
@@ -135,21 +132,23 @@ class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
         queue = PrerenderQueue()
         queue.put_multiple( letters )
         super().__init__( queue )
-class ComposeAndPrerenderThread( AbstractRendererThread ):
-    def __init__( self, template_env, lettercomposition ):
-        super().__init__( template_env )
+class ComposeAndPrerenderThread( PrerenderThread ):
+    def __init__( self, lettercomposition, template_env ):
         self._lettercomposition = lettercomposition
+        PrerenderThread.__init__( self, template_env )
     def work( self, unmerged_contract ):
         contract = self._session.merge( unmerged_contract ) # add them to the local session
         letter = self._lettercomposition.compose( contract )
-        if letter.has_contents():
-            return super().work( letter )
+        rendered_letter = super().work( letter ) if letter.has_contents() else None
+        self._session.expunge_all()
+        self._session.remove()
+        return rendered_letter
 class ComposeAndPrerenderQueue( AbstractRendererQueue ):
-    def __init__( self, template_env, lettercomposition ):
-        super().__init__( template_env )
+    def __init__( self, lettercomposition, template_env ):
         self._lettercomposition = lettercomposition
+        super().__init__( template_env )
     def _create_thread( self ):
-        return ComposeAndPrerenderThread( self._lettercomposition )
+        return ComposeAndPrerenderThread( self._lettercomposition, self._template_env )
 class AbstractRenderer( threadqueue.QueueWatcherThread ):
     __metaclass__ = abc.ABCMeta
     def _get_template_env( self, template_env ):
@@ -157,8 +156,9 @@ class AbstractRenderer( threadqueue.QueueWatcherThread ):
     def __init__( self, q, template_env=None ):
         self._template_env = self._get_template_env( template_env )
         super().__init__( q )
-    def on_finished( self, rendered_letters ):
+    def on_finished( self, rendering_results ):
         template = self._template_env.get_template( "{}.template".format( "base" ) )
+        rendered_letters = [rendered_letter for rendered_letter in rendering_results if rendered_letter is not None]
         if len( rendered_letters ) == 0:
             raise ValueError( "No rendered letters" )
         rendered_document = template.render( {'prerendered_letters':rendered_letters} )
@@ -176,7 +176,7 @@ class LetterRenderer( AbstractRenderer ):
 class ComposingRenderer( AbstractRenderer ):
     def __init__( self, output_file, lettercomposition, contracts, _template_env=None ):
         template_env = self._get_template_env( _template_env )
-        queue = ComposeAndPrerenderQueue( template_env, lettercomposition )
+        queue = ComposeAndPrerenderQueue( lettercomposition, template_env )
         queue.put_multiple( contracts )
         super().__init__( queue, template_env )
         self._output_file = output_file
