@@ -13,7 +13,42 @@ from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from core.errors import InvoiceError
 
-Base = declarative_base()
+class DatabaseObject:
+    def _to_dict( self ):
+        d = {}
+        for c in self.__table__.columns:
+            value = getattr( self, c.name )
+            d[c.name] = value
+        return d
+    def equals( self, other ):
+        if isinstance( other, self.__class__ ):
+            attr1 = self._to_dict()
+            attr2 = other._to_dict()
+            for key in list( attr1.keys() ):
+                if key.startswith( "_" ):
+                    attr1.pop( key )
+            for key in list( attr2.keys() ):
+                if key.startswith( "_" ):
+                    attr2.pop( key )
+            return ( attr1 == attr2 )
+        else:
+            return False
+    @classmethod
+    def count( cls ):
+        return Session().query( func.count( cls.id ) ).scalar()
+    @classmethod
+    def get_by_id( cls, unique_id ):
+        q = Session().query( cls ).filter_by( id=unique_id )
+        return q.first() if q else None
+    @classmethod
+    def get_all( cls, session=None ):
+        if session is None:
+            session = Session
+        else:
+            if not isinstance( session, type( Session ) ):
+                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
+        return list( session().query( cls ).order_by( cls.id ) )
+Base = declarative_base( cls=DatabaseObject )
 
 zipcodes = {}
 bankcodes = {}
@@ -120,36 +155,6 @@ class Customer( Base ):
         else:
             salutation = 'Sehr geehrte Damen und Herren'
         return salutation
-    def __eq__( self, other ):
-        if isinstance( other, self.__class__ ):
-            attr1 = self.__dict__.copy() # We copy the dicts, since we don't want to alter the original ones
-            attr2 = other.__dict__.copy()
-            for key in list( attr1.keys() ):
-                if key.startswith( "_" ):
-                    attr1.pop( key )
-            for key in list( attr2.keys() ):
-                if key.startswith( "_" ):
-                    attr2.pop( key )
-            return ( attr1 == attr2 )
-        else:
-            return False
-    def __ne__( self, other ):
-        return not self.__eq__( other )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Customer.id ) ).scalar()
-    @staticmethod
-    def get_by_id( customer_id ):
-        q = Session().query( Customer ).filter_by( id=customer_id )
-        return q.first() if q else None
-    @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Customer ).order_by( Customer.id ) )
     def __init__( self, familyname, prename, honourific="Herr", title="", birthday=None, gender=GenderType.Undefined, company1="", company2="", department="" ):
         # if not ( familyname or company1 ):
         #     raise ValueError
@@ -206,23 +211,6 @@ class Address( Base ):
         self.city = city if city else Address.getCityByZip( self.zipcode )
         self.countrycode = countrycode
         self.co = co
-    @staticmethod
-    def get_by_id( address_id, session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        q = session().query( Address ).filter_by( id=address_id )
-        return q.first() if q else None
-    @staticmethod
-    def count():
-        return Session().query( func.count( Address.id ) ).scalar()
-    @staticmethod
-    def getCityByZip( zipcode ):
-        if zipcode and zipcodes and zipcode in zipcodes:
-                return zipcodes[zipcode]
-        return ""
     def is_valid( self ):
         if not self.street or not self.zipcode or not self.city or not self.countrycode:
             return False
@@ -262,17 +250,6 @@ class Magazine( Base ):
             result.append( issue )
         result = result[:limit] if limit is not None else result
         return result
-    @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Magazine ).order_by( Magazine.id ) )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Magazine.id ) ).scalar()
 class Subscription( Base ):
     __tablename__ = 'subscriptions'
     id = Column( Integer, primary_key=True )
@@ -295,26 +272,6 @@ class Subscription( Base ):
         if not self.magazine or not self.name or not self.value:
             return False
         return True
-    @staticmethod
-    def get_by_id( subscription_id, session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        q = session().query( Subscription ).filter_by( id=subscription_id )
-        return q.first() if q else None
-    @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Subscription ).order_by( Subscription.id ) )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Subscription.id ) ).scalar()
 class Issue( Base ):
     __tablename__ = 'issues'
     id = Column( Integer, primary_key=True )
@@ -327,9 +284,6 @@ class Issue( Base ):
         self.year = year
         self.number = number
         self.date = date
-    @staticmethod
-    def count():
-        return Session().query( func.count( Issue.id ) ).scalar()
     def is_valid( self ):
         if not self.magazine or not self.year or not self.number or not self.date:
             return False
@@ -348,18 +302,6 @@ class Bankaccount( Base ):
         self.bic = bic # if bic else  Bankaccount.get_bic_by_iban( self.bic )
         self.bank = bank # if bank else Bankaccount.get_bank_by_bic( self.bic )
         self.owner = owner
-    @staticmethod
-    def get_by_id( bankaccount_id, session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        q = session().query( Bankaccount ).filter_by( id=bankaccount_id )
-        return q.first() if q else None
-    @staticmethod
-    def count():
-        return Session().query( func.count( Bankaccount.id ) ).scalar()
     def is_valid( self ):
         if not self.customer or not self.iban or not self.bic:
             return False
@@ -406,15 +348,6 @@ class Contract( Base ):
         self.bankaccount = bankaccount
         self.refid = Contract.generate_refid()
     @staticmethod
-    def get_by_id( contract_id, session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        q = session().query( Contract ).filter_by( id=contract_id )
-        return q.first() if q else None
-    @staticmethod
     def get_by_refid( contract_refid, session=None ):
         if session is None:
             session = Session
@@ -423,17 +356,6 @@ class Contract( Base ):
                 raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
         q = session().query( Contract ).filter_by( refid=contract_refid )
         return q.first() if q else None
-    @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Contract ).order_by( Contract.id ) )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Contract.id ) ).scalar()
     @staticmethod
     def scan_refid_for_contract( reference ):
         for needle in re.findall( "[0-9A-Z]{%d}" % ( Contract.REFID_SIZE + Contract.REFID_CHECKSUM_SIZE ), reference ):
@@ -607,14 +529,6 @@ class Note( LetterPart ):
         self.subject = subject
         self.text = text
     @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Note ).order_by( Note.subject ) )
-    @staticmethod
     def count():
         return Session().query( func.count( Note.id ) ).scalar()
 
@@ -639,9 +553,6 @@ class BookkeepingEntry( Base ):
             self.customer_id = customer_id
         if contract_id:
             self.contract_id = contract_id
-    @staticmethod
-    def count():
-        return Session().query( func.count( BookkeepingEntry.id ) ).scalar()
     def is_valid( self ):
         if not self.customer or not self.contract or not self.date or not self.value or not self.description:
             return False
@@ -729,17 +640,6 @@ class Invoice( LetterPart ):
             number = 0
         number += 1
         self.number = number
-    @staticmethod
-    def get_all( session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( Invoice ).order_by( Invoice.id ) )
-    @staticmethod
-    def count():
-        return Session().query( func.count( Invoice.id ) ).scalar()
     def is_valid( self ):
         if not self.contract or not self.date or not self.entries:
             return False

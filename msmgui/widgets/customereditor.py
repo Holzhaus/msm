@@ -112,7 +112,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         for obj in self._session.new:
             if obj is not self._customer:
                 return True # you added an address, bankaccount, etc. to this customer
-            elif self._customer != core.database.Customer( "", "" ):
+            elif not self._customer.equals( core.database.Customer( "", "" ) ):
                 return True # you're creating a new customer and already entered some values
         for obj in self._session.dirty:
             if self._session.is_modified( obj ): # session.dirty is "optimistic", so we check if the object was really modified
