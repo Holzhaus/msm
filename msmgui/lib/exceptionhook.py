@@ -12,7 +12,10 @@ import tempfile
 import cgitb
 import traceback
 
-_ = lambda s: s
+# If gettext is not used
+try: _
+except NameError:
+    def _( s ): return s
 
 class ExceptionDialog( Gtk.Dialog ):
     def __init__( self, doc, etype, evalue, etb ):
