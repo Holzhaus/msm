@@ -12,6 +12,7 @@ import core.database
 from core.lib import pdflatex
 from core.lib import threadqueue
 from msmgui.widgets.base import ScopedDatabaseObject
+from core import lettercomposition
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 class LatexEnvironment( jinja2.Environment ):
@@ -107,9 +108,7 @@ class PrerenderThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
         return template.render( templatevars )
     def _prerender_note( self, generic_templatevars, note ):
         templatevars = generic_templatevars.copy()
-        templatevars.update( {'subject': note.subject,
-                              'text': self._template_env.from_string( note.text ).render( templatevars ) } )
-        template = self._template_env.get_template( "{}.template".format( "note" ) )
+        template = self._template_env.get_template( os.path.join( "notes", "{}.template".format( note.template ) ) )
         return template.render( templatevars )
 class PrerenderQueue( AbstractRendererQueue ):
     def _create_thread( self ):
@@ -135,10 +134,12 @@ class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
 class ComposeAndPrerenderThread( PrerenderThread ):
     def __init__( self, lettercomposition, template_env ):
         self._lettercomposition = lettercomposition
+        self._lettercomposition.expunge_contents()
         PrerenderThread.__init__( self, template_env )
     def work( self, unmerged_contract ):
         contract = self._session.merge( unmerged_contract ) # add them to the local session
-        letter = self._lettercomposition.compose( contract )
+        lettercomp = self._lettercomposition.merge( self._session )
+        letter = lettercomp.compose( contract )
         rendered_letter = super().work( letter ) if letter.has_contents() else None
         self._session.expunge_all()
         self._session.remove()

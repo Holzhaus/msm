@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from gi.repository import Gtk, Gdk, GObject, GdkPixbuf
-import core.database
+from core.database import Note
 from core.lettercomposition import InvoicePlaceholder, Criterion
 import msmgui.rowreference
 TARGET_ENTRY_PYOBJECT = 0
@@ -36,6 +36,17 @@ class LetterCompositor( Gtk.Box ):
         targets.add( Gdk.Atom.intern( "MSMLetterPart", False ), Gtk.TargetFlags.SAME_APP, TARGET_ENTRY_PYOBJECT )
         self._droparea.drag_dest_set_target_list( targets )
         self._dragarea.drag_source_set_target_list( targets )
+    @staticmethod
+    def get_letterpart_info( obj ):
+        if isinstance( obj, InvoicePlaceholder ):
+            name = "Rechnungen"
+            icon_name = "image-missing"
+        elif isinstance( obj, Note ):
+            name = "Anschreiben: {}".format( obj.name )
+            icon_name = "text-x-generic"
+        else:
+            raise TypeError( 'Unhandled type: {}'.format( obj.__class__.__name__ ) )
+        return name, icon_name
     def get_composition( self ):
         return self._droparea.get_composition()
     def droparea_changed_cb( self, droparea, not_empty ):
@@ -49,22 +60,21 @@ class DragArea( Gtk.IconView ):
         model = Gtk.ListStore( GObject.TYPE_PYOBJECT, str, GdkPixbuf.Pixbuf )
         self.set_model( model )
         self.add_item( InvoicePlaceholder() )
-        for note in core.database.Note.get_all():
+        for note in Note.get_all():
+            print( note )
             self.add_item( note )
+            obj_session = note.session
+            if obj_session:
+                obj_session.expunge( note )
         self.enable_model_drag_source( Gdk.ModifierType.BUTTON1_MASK, [], DRAG_ACTION )
         self.connect( "drag-data-get", self.drag_data_get_cb )
     def drag_data_get_cb( self, widget, drag_context, data, info, time ):
         path = self.get_selected_items()[0]
         data.set( Gdk.Atom.intern( "MSMLetterPart", False ), 32, str( path ).encode( "utf-8" ) )
     def add_item( self, obj ):
-        if isinstance( obj, InvoicePlaceholder ):
-            text = "Rechnungen"
-            icon_name = "image-missing"
-        else:
-            text = "Anschreiben: {}".format( obj.subject )
-            icon_name = "text-x-generic"
-        pixbuf = Gtk.IconTheme.get_default().load_icon( icon_name, 16, 0 )
-        self.get_model().append( [obj, text, pixbuf] )
+        name, icon = LetterCompositor.get_letterpart_info( obj )
+        pixbuf = Gtk.IconTheme.get_default().load_icon( icon, 16, 0 )
+        self.get_model().append( [obj, name, pixbuf] )
 
 class DropArea( Gtk.Box ):
     __gsignals__ = {
@@ -109,16 +119,8 @@ class DropArea( Gtk.Box ):
         self.emit( "changed", len( dropmodel ) != 0 )
     def name_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         obj = model[treeiter][0]
-        if isinstance( obj, InvoicePlaceholder ):
-            text = "Rechnungen"
-        elif isinstance( obj, core.database.Note ):
-            # TODO: Implement this properly
-            text = "Anschreiben: {}".format( obj.subject )
-        elif obj is None:
-            text = "aaaaaaa"
-        else:
-            raise RuntimeError( obj )
-        cellrenderer.set_property( 'text', text )
+        name, icon = LetterCompositor.get_letterpart_info( obj )
+        cellrenderer.set_property( 'text', name )
     def criterion_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         criterion = model[treeiter][1]
         text = Criterion.get_text( criterion )

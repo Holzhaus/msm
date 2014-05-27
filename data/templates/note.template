@@ -1,10 +1,12 @@
 \begin{letter}{((( recipient|escape_tex|escape_nl )))}
 \setkomavar{signature}{((( signature|escape_tex|escape_nl )))}
 \setkomavar{date}{((( date )))}
-\setkomavar{subject}{((( subject|escape_tex|escape_nl )))}
+\setkomavar{subject}{((* block subject *))Betreff((* endblock subject *))}
 \opening{((( opening|escape_tex|escape_nl ))),}
 
-((( text )))
+((* block content *))
+Dies ist eine Nachricht.
+((* endblock content *))
 
 \closing{ ((( closing|escape_tex|escape_nl ))),}
 \end{letter}

@@ -8,7 +8,6 @@ from msmgui.widgets.addresseditor import AddressEditor
 from msmgui.widgets.bankaccounteditor import BankaccountEditor
 from msmgui.widgets.contracteditor import ContractEditor
 from msmgui.widgets.base import ScopedDatabaseObject
-import locale
 class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
     __gsignals__ = {
         'edit-started': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ),

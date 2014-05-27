@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 import decimal
 import locale
 import datetime
@@ -22,6 +24,13 @@ class DatabaseObject:
             value = getattr( self, c.name )
             d[c.name] = value
         return d
+    @staticmethod
+    def _mksession( session=None ):
+        if session is None:
+            session = Session
+        elif not isinstance( session, type( Session ) ):
+            raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
+        return session
     def equals( self, other ):
         if isinstance( other, self.__class__ ):
             attr1 = self._to_dict()
@@ -36,20 +45,22 @@ class DatabaseObject:
         else:
             return False
     @classmethod
-    def count( cls ):
-        return Session().query( func.count( cls.id ) ).scalar()
+    def count( cls, session=None ):
+        logger.debug( 'count called for %r', cls )
+        session = cls._mksession( session )
+        return session.query( func.count( cls.id ) ).scalar()
     @classmethod
-    def get_by_id( cls, unique_id ):
-        q = Session().query( cls ).filter_by( id=unique_id )
+    def get_by_id( cls, unique_id, session=None ):
+        logger.debug( 'get_all called for %r', cls )
+        session = cls._mksession( session )
+        q = session.query( cls ).filter_by( id=unique_id )
         return q.first() if q else None
     @classmethod
     def get_all( cls, session=None ):
-        if session is None:
-            session = Session
-        else:
-            if not isinstance( session, type( Session ) ):
-                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
-        return list( session().query( cls ).order_by( cls.id ) )
+        logger.debug( 'get_all called for %r', cls )
+        session = cls._mksession( session )
+        result = list( session.query( cls ).order_by( cls.id ) )
+        return result
     @property
     def session( self ):
         return object_session( self )
@@ -535,12 +546,11 @@ class Note( LetterPart ):
         'polymorphic_identity':'note',
     }
     id = Column( Integer, ForeignKey( 'letterparts.id' ), primary_key=True )
-    subject = Column( String( 50 ) )
-    text = Column( Text )
-    def __init__( self, subject, text ):
-        self.subject = subject
-        self.text = text
-
+    template = Column( String( 50 ) )
+    name = Column( String( 50 ) )
+    def __init__( self, name, template ):
+        self.name = name
+        self.template = template
 
 bkentry_association_table = Table( 'association', Base.metadata,
     Column( 'invoice_id', Integer, ForeignKey( 'invoices.id' ) ),
