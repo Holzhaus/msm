@@ -226,13 +226,16 @@ class Address( Base ):
     def __init__( self, street, zipcode, city="", countrycode="DE", co="" ):
         self.street = street
         self.zipcode = zipcode
-        self.city = city if city else Address.getCityByZip( self.zipcode )
+        self.city = city
         self.countrycode = countrycode
         self.co = co
     def is_valid( self ):
         if not self.street or not self.zipcode or not self.city or not self.countrycode:
             return False
         return True
+    @property
+    def string_f( self ):
+        return ( "%s, %s-%s %s" % ( self.street, self.countrycode, self.zipcode, self.city ) )
 
 class Magazine( Base ):
     __tablename__ = 'magazines'
