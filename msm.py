@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import logging
+import logging.config
+import os.path
+def logging_init():
+    logfile = os.path.join( os.path.dirname( __file__ ), 'data', 'logging.cfg' )
+    print( logfile )
+    logging.config.fileConfig( logfile )
+logging_init()
+logger = logging.getLogger()
 import sys
 from gi.repository import Gtk, Gio, GObject
 from gi.repository.GLib import GError

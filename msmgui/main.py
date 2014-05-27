@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, Gio
 import msmgui.widgets.customerwindow
 import msmgui.widgets.invoicewindow
@@ -12,6 +14,9 @@ class MainWindow( Gtk.ApplicationWindow ):
             application:
                 the Gtk.Application that this window belongs to
         """
+
+        logger.debug( 'Initializing MainWindow' )
+
         Gtk.ApplicationWindow.__init__( self, application=application )
         self.set_property( "window_position", Gtk.WindowPosition.CENTER )
         self.set_property( "default_width", 900 )
