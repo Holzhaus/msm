@@ -17,6 +17,10 @@ class InvoicePlaceholder:
     pass
 class LetterComposition( list ):
     def append( self, part, criterion ):
+        if not ( isinstance( part, LetterPart ) or isinstance( part, InvoicePlaceholder ) ):
+            raise TypeError( 'instance %r has invalid type: %r' % ( part, type( part ) ) )
+        if not ( criterion == Criterion.Always or criterion == Criterion.OnlyOnInvoice or criterion == Criterion.OnlyOnDirectWithdrawal or criterion is None ):
+            raise ValueError( 'not a criterion' )
         super().append( ( part, criterion ) )
     def expunge_contents( self ):
         for part, criterion in self:
@@ -45,6 +49,4 @@ class ContractLetterComposition( LetterComposition ):
                         letter.add_content( invoice )
                 else:
                     letter.add_content( part )
-            else:
-                raise RuntimeError( "unknown type: %s", part )
         return letter
