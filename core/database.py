@@ -12,6 +12,7 @@ from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Text, Dat
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from core.errors import InvoiceError
+from core.lib import iban
 
 class DatabaseObject:
     def _to_dict( self ):
@@ -307,7 +308,12 @@ class Bankaccount( Base ):
     def is_valid( self ):
         if not self.customer or not self.iban or not self.bic:
             return False
-        return True
+        try:
+            iban.check_iban( self.iban )
+        except iban.IBANError:
+            return False
+        else:
+            return True
 class Contract( Base ):
     __tablename__ = 'contracts'
     id = Column( Integer, primary_key=True )
