@@ -48,6 +48,8 @@ class DatabaseObject:
             if not isinstance( session, type( Session ) ):
                 raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
         return list( session().query( cls ).order_by( cls.id ) )
+    def is_valid( self ):
+        raise NotImplementedError
 Base = declarative_base( cls=DatabaseObject )
 
 zipcodes = {}
