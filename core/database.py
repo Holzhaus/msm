@@ -8,8 +8,9 @@ import string
 import re
 import sqlalchemy
 from sqlalchemy import create_engine, func
-from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Text, Date, ForeignKey
+from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Date, ForeignKey
 from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
+from sqlalchemy.orm.session import object_session
 from sqlalchemy.ext.declarative import declarative_base
 from core.errors import InvoiceError
 from core.lib import iban
@@ -49,6 +50,9 @@ class DatabaseObject:
             if not isinstance( session, type( Session ) ):
                 raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
         return list( session().query( cls ).order_by( cls.id ) )
+    @property
+    def session( self ):
+        return object_session( self )
     def is_valid( self ):
         raise NotImplementedError
 Base = declarative_base( cls=DatabaseObject )
@@ -536,9 +540,6 @@ class Note( LetterPart ):
     def __init__( self, subject, text ):
         self.subject = subject
         self.text = text
-    @staticmethod
-    def count():
-        return Session().query( func.count( Note.id ) ).scalar()
 
 
 bkentry_association_table = Table( 'association', Base.metadata,
