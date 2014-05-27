@@ -1,4 +1,4 @@
-\documentclass[position]{scrlttr2}
+\documentclass[positionDefault]{scrlttr2}
 \usepackage[ngerman]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{marvosym}
