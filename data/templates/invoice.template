@@ -6,7 +6,7 @@
 
 anbei finden Sie die Rechnung für das ((( subscription_name|escape_tex|escape_nl ))) der Zeitschrift „((( magazine_name|escape_tex|escape_nl )))“.
 
-\begin{tabularx}{\textwidth}{|lX|r|}
+\begin{tabularx}{\dimexpr\textwidth-\parindent\relax}{|lX|r|}
 \hline
 & \textbf{Bezeichnung} & \textbf{Betrag}\\\hline
 ((* for entry in entries *))

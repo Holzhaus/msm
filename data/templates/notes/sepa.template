@@ -5,7 +5,7 @@ zur Zeit zahlen Sie ihr (((contract.subscription.name))) der Zeitschrift „(((c
 
 Lastschriften werden weiterhin von Ihrem folgenden Konto eingezogen:
 
-\begin{tabularx}{\textwidth}{|rX|}
+\begin{tabularx}{\dimexpr\textwidth-\parindent\relax}{|rX|}
 \hline
 IBAN: & (((contract.bankaccount.iban)))\\
 BIC: & (((contract.bankaccount.bic))) ( (((contract.bankaccount.bankname))) )\\
