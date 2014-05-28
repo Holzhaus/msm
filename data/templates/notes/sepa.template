@@ -8,7 +8,9 @@ Lastschriften werden weiterhin von Ihrem folgenden Konto eingezogen:
 \begin{tabularx}{\dimexpr\textwidth-\parindent\relax}{|rX|}
 \hline
 IBAN: & (((contract.bankaccount.iban)))\\
-BIC: & (((contract.bankaccount.bic))) ( (((contract.bankaccount.bankname))) )\\
+BIC: & (((contract.bankaccount.bic))) (%
+(((contract.bankaccount.bank)))% 
+)\\
 Mandatsreferenz: & (((contract.refid)))\\\hline
 \end{tabularx}
 Sollten diese Angaben nicht aktuell oder korrekt sein, bitten wir Sie umgehend um Benachrichtigung. Ihre IBAN und den BIC finden Sie z. B. auch auf Ihrem Kontoauszug. Sofern Sie Fragen zu diesem Schreiben haben, kontaktieren Sie uns gerne.
