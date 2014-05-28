@@ -5,7 +5,6 @@ import logging.config
 import os.path
 def logging_init():
     logfile = os.path.join( os.path.dirname( __file__ ), 'data', 'logging.cfg' )
-    print( logfile )
     logging.config.fileConfig( logfile )
 logging_init()
 logger = logging.getLogger()
@@ -47,6 +46,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
             data:
                 additional data passed to this function
         """
+        logger.debug( 'Starting up...' )
         self.config = Config
         db_uri = self.config.get( "Database", "db_uri" )
         self.database = Database( db_uri )
@@ -69,6 +69,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
         self.add_action( quit_action )
         self._mainwindow.show_all()
         self._mainwindow.present()
+        logger.debug( 'Startup finished, presenting MainWindow...' )
     # Callbacks for AppMenu Actions
     def settings_cb( self, action, parameter ):
         """
@@ -96,7 +97,9 @@ class MagazineSubscriptionManager( Gtk.Application ):
             sys.exit()
 
 if __name__ == "__main__":
+    logger.debug( 'Initializing' )
     msmgui.lib.exceptionhook.install()
     GObject.threads_init() # Yup, we use threading in this application ;-)
     msmapp = MagazineSubscriptionManager()
+    logger.debug( 'Running app...' )
     msmapp.run( None )
