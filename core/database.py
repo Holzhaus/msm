@@ -528,6 +528,34 @@ class Letter( Base ):
     def has_contents( self ):
         return True if len( self.contents ) else False
 
+lettercollection_association_table = Table( 'lettercollection_association', Base.metadata,
+    Column( 'letter_id', Integer, ForeignKey( 'letters.id' ) ),
+    Column( 'lettercollection_id', Integer, ForeignKey( 'lettercollections.id' ) )
+ )
+
+class LetterCollection( Base ):
+    __tablename__ = 'lettercollections'
+    id = Column( Integer, primary_key=True )
+    creation_date = Column( Date, nullable=False )
+    name = Column( String, nullable=False )
+    description = Column( String, nullable=False )
+    letters = relationship( Letter, secondary=lettercollection_association_table, backref="collections", cascade="all" )
+    def __init__( self, name="", description="", creation_date=datetime.date.today() ):
+        self.name = name
+        self.description = description
+        self.creation_date = creation_date
+    def add_letter( self, letter ):
+        self.letters.append( letter )
+    def add_letters( self, letters ):
+        for letter in letters:
+            self.add_letter( letter )
+    @property
+    def name_f( self ):
+        if self.name:
+            return self.name
+        else:
+            return "Unnamed Lettercollection ({})".format( self.creation_date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+
 letter_association_table = Table( 'letter_association', Base.metadata,
     Column( 'letter_id', Integer, ForeignKey( 'letters.id' ) ),
     Column( 'letterpart_id', Integer, ForeignKey( 'letterparts.id' ) )
