@@ -8,6 +8,7 @@ import re
 import locale
 import jinja2
 import abc
+import threading
 import core.database
 from core.lib import pdflatex
 from core.lib import threadqueue
@@ -113,10 +114,10 @@ class PrerenderThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
 class PrerenderQueue( AbstractRendererQueue ):
     def _create_thread( self ):
         return PrerenderThread( self._template_env )
-class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
+class Prerenderer( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
     """
     Usage:
-        watcher = PrerenderWatcher(letters)
+        watcher = Prerenderer(letters)
         watcher.start()
         watcher.join()
     """
@@ -131,25 +132,29 @@ class PrerenderWatcher( threadqueue.QueueWatcherThread, ScopedDatabaseObject ):
         queue = PrerenderQueue()
         queue.put_multiple( letters )
         super().__init__( queue )
-class ComposeAndPrerenderThread( PrerenderThread ):
-    def __init__( self, lettercomposition, template_env ):
+class ComposeThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
+    def __init__( self, lettercomposition ):
+        threadqueue.AbstractQueueThread.__init__( self )
+        ScopedDatabaseObject.__init__( self )
         self._lettercomposition = lettercomposition
-        self._lettercomposition.expunge_contents()
-        PrerenderThread.__init__( self, template_env )
     def work( self, unmerged_contract ):
         contract = self._session.merge( unmerged_contract ) # add them to the local session
         lettercomp = self._lettercomposition.merge( self._session )
         letter = lettercomp.compose( contract )
-        rendered_letter = super().work( letter ) if letter.has_contents() else None
         self._session.expunge_all()
         self._session.remove()
-        return rendered_letter
-class ComposeAndPrerenderQueue( AbstractRendererQueue ):
-    def __init__( self, lettercomposition, template_env ):
+        return letter
+class ComposeQueue( threadqueue.AbstractQueue ):
+    def __init__( self, lettercomposition ):
         self._lettercomposition = lettercomposition
-        super().__init__( template_env )
+        super().__init__()
     def _create_thread( self ):
-        return ComposeAndPrerenderThread( self._lettercomposition, self._template_env )
+        return ComposeThread( self._lettercomposition )
+class Composer( threadqueue.QueueWatcherThread ):
+    def __init__( self, lettercomposition, contracts ):
+        queue = ComposeQueue( lettercomposition )
+        queue.put_multiple( contracts )
+        super().__init__( queue )
 class AbstractRenderer( threadqueue.QueueWatcherThread ):
     __metaclass__ = abc.ABCMeta
     def _get_template_env( self, template_env ):
@@ -168,19 +173,118 @@ class AbstractRenderer( threadqueue.QueueWatcherThread ):
         imagedir = os.path.join( datadir, 'images' )
         pdflatex.compile_str( rendered_document, self._output_file, [latexdir, imagedir] )
 class LetterRenderer( AbstractRenderer ):
-    def __init__( self, output_file, letters, _template_env=None ):
+    def __init__( self, letters, output_file, _template_env=None ):
         template_env = self._get_template_env( _template_env )
         queue = PrerenderQueue( template_env )
         queue.put_multiple( letters )
         super().__init__( queue, template_env )
         self._output_file = output_file
-class ComposingRenderer( AbstractRenderer ):
-    def __init__( self, output_file, lettercomposition, contracts, _template_env=None ):
-        template_env = self._get_template_env( _template_env )
-        queue = ComposeAndPrerenderQueue( lettercomposition, template_env )
-        queue.put_multiple( contracts )
-        super().__init__( queue, template_env )
+class ComposingRenderer( threading.Thread, ScopedDatabaseObject ):
+    class SubComposer( Composer ):
+        def __init__( self, parent, lettercomposition, contracts ):
+            super().__init__( lettercomposition, contracts )
+            self._parent = parent
+        def on_start( self, work_left ):
+            self._parent.on_composing_start( work_left )
+            super().on_start( work_left )
+        def on_output( self, work_left, output ):
+            self._parent.on_composing_output( self.work_done, self.work_started )
+            super().on_output( work_left, output )
+        def on_finished( self, output_list ):
+            letters = [letter for letter in output_list if letter is not None and letter.has_contents()]
+            self._parent.on_composing_finished( len( letters ) )
+            self._parent._save( letters )
+    class SubLetterRenderer( LetterRenderer ):
+        def __init__( self, parent, letters, output_file, template_env=None ):
+            super().__init__( letters, output_file, template_env )
+            self._parent = parent
+        def on_start( self, work_left ):
+            self._parent.on_rendering_start( self.work_started )
+            super().on_start( work_left )
+        def on_output( self, work_left, output ):
+            self._parent.on_rendering_output( self.work_done, self.work_started )
+            super().on_output( work_left, output )
+        def on_finished( self, output_list ):
+            self._parent.on_rendering_finished( self.work_done )
+            self._parent.on_compilation_start( self.work_done )
+            super().on_finished( output_list )
+            self._parent.on_compilation_finished( self.work_done )
+    def __init__( self, lettercomposition, contracts, output_file, template_env=None ):
+        threading.Thread.__init__( self )
+        ScopedDatabaseObject.__init__( self )
+        self._lettercomposition = lettercomposition
+        self._contracts = contracts
         self._output_file = output_file
+        self._template_env = template_env
+        self._composer = self.__class__.SubComposer( self, self._lettercomposition, self._contracts )
+        self._letterrenderer = None
+    def run( self ):
+        self._composer.start()
+        self._composer.join()
+    def _save( self, letters ):
+        num_letters = len( letters )
+        self.on_saving_start( num_letters )
+        merged_letters = []
+        lettercomposition = self._lettercomposition.merge( self._session )
+        lettercollection = core.database.LetterCollection( description=lettercomposition.get_description() )
+        self._session.add( lettercollection )
+        for unmerged_letter in letters:
+            merged_letter = self.session.merge( unmerged_letter )
+            lettercollection.add_letter( merged_letter )
+            merged_letters.append( merged_letter )
+        # Save merged Letters
+        self._session.commit()
+        self._session.remove()
+        self.on_saving_finished( num_letters )
+        self._render( letters )
+    def _render( self, letters ):
+        self._letterrenderer = self.__class__.SubLetterRenderer( self, letters, self._output_file )
+        self._letterrenderer.start()
+        self._letterrenderer.join()
+    def on_composing_start( self, work_started ):
+        """
+        Called when rendering starts
+        """
+        pass
+    def on_composing_output( self, work_done, work_started ):
+        """
+        Called when composing produces output
+        """
+        pass
+    def on_composing_finished( self, num_letters ):
+        """
+        Called when composing done
+        """
+        pass
+    def on_saving_start( self, num_letters_to_save ):
+        """
+        Called when saving starts
+        """
+        pass
+    def on_saving_finished( self, num_letters_saved ):
+        """
+        Called when saving has finished
+        """
+        pass
+    def on_rendering_start( self, work_started ):
+        """
+        Called when rendering start
+        """
+    def on_rendering_output( self, work_done, work_started ):
+        """
+        Called when rendering produces output
+        """
+        pass
+    def on_rendering_finished( self, work_done ):
+        """
+        Called when rendering has finished
+        """
+        pass
+    def on_compilation_finished( self, work_done ):
+        """
+        Called when rendering has finished
+        """
+        pass
 class LetterPreviewRenderer( LetterRenderer ):
     """
     Usage:
@@ -193,7 +297,7 @@ class LetterPreviewRenderer( LetterRenderer ):
         tmp_file = tempfile.NamedTemporaryFile( suffix=os.extsep + "pdf", delete=False )
         tmp_filepath = tmp_file.name
         tmp_file.close()
-        super().__init__( tmp_filepath, [letter] )
+        super().__init__( [letter], tmp_filepath )
     @staticmethod
     def show_viewer( filepath, delete_file_after=False ):
         """
@@ -207,7 +311,7 @@ class LetterPreviewRenderer( LetterRenderer ):
         if sys.platform.startswith( 'darwin' ):
             subprocess.call( ["open", "-W", filepath], stdout=FNULL, stderr=FNULL )
         elif sys.platform.startswith( 'linux' ):
-            # FIXME: On Linux, we need to use gi.repository.Gio, because I don't want parse all that fucking XDG info, just because it doesn't have a WAIT option
+            # FIXME: On Linux, we need to use gi.repository.Gio, because I don't want to parse all that fucking XDG info, just coz it doesn't have a WAIT option
             mime_type, must_support_uris = Gio.content_type_guess( filepath )
             app_info = Gio.AppInfo.get_default_for_type( mime_type, must_support_uris )
             if app_info:
@@ -222,4 +326,4 @@ class LetterPreviewRenderer( LetterRenderer ):
             os.remove( filepath )
     def on_finished( self, rendered_letters ):
         super().on_finished( rendered_letters )
-        self.__class__.show_viewer( self._output_file, delete_file_after=False )
+        self.__class__.show_viewer( self._output_file, delete_file_after=True )

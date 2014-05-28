@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -
 import datetime
-from core.database import Letter, LetterPart, PaymentType
+from core.database import Letter, LetterPart, Note, PaymentType
 class Criterion:
     Always, OnlyOnInvoice, OnlyOnDirectWithdrawal = range( 3 )
     @staticmethod
@@ -16,6 +16,17 @@ class Criterion:
 class InvoicePlaceholder:
     pass
 class LetterComposition( list ):
+    def get_description( self ):
+        desc = ""
+        for part, criterion in self:
+            if type( part ) is InvoicePlaceholder:
+                desc += "Rechnung"
+            elif type( part ) is Note:
+                desc += part.name
+            else:
+                raise TypeError( "Unknown Letterpart" )
+            desc += " ({})\n".format( Criterion.get_text( criterion ) )
+        return desc.strip()
     def append( self, part, criterion ):
         if not ( isinstance( part, LetterPart ) or isinstance( part, InvoicePlaceholder ) ):
             raise TypeError( 'instance %r has invalid type: %r' % ( part, type( part ) ) )

@@ -7,6 +7,58 @@ from core.letterrenderer import ComposingRenderer
 from core.lettercomposition import ContractLetterComposition
 import msmgui.widgets.lettercompositor
 from msmgui.widgets.base import ScopedDatabaseObject
+class LetterExporter( ComposingRenderer ):
+    def __init__( self, lettercomposition, contracts, gui_objects, update_step=25 ):
+        output_file = '/tmp/export.pdf'
+        super().__init__( lettercomposition, contracts, output_file )
+        self._gui_spinner, self._gui_label, self._gui_assistant, self._gui_page = gui_objects
+        self._update_step = update_step
+    def on_composing_start( self, work_started ):
+        text = "Starte Zusammenstellung..."
+        GLib.idle_add( self._gui_start )
+        GLib.idle_add( self._gui_update, text )
+    def on_composing_output( self, work_done, work_started ):
+        if self._update_step is not None:
+            if not ( work_done % self._update_step == 0 or work_done == 1 ):
+                return
+        text = "Stelle Briefe für Verträge zusammen... ({}/{})".format( work_done, work_started )
+        GLib.idle_add( self._gui_update, text )
+    def on_composing_finished( self, num_letters ):
+        text = "1 Brief zusammengestellt!" if num_letters == 1 else "{} Briefe zusammengestellt!".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+    def on_saving_start( self, num_letters ):
+        text = "Speichere 1 Brief in der Datenbank..." if num_letters == 1 else "Speichere {} Briefe in der Datenbank...".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+    def on_saving_stop( self, num_letters ):
+        text = "1 Brief in der Datenbank gespeichert!" if num_letters == 1 else "{} Briefe in der Datenbank gespeichert!".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+    def on_rendering_start( self, work_started ):
+        text = "Starte Rendering..."
+        GLib.idle_add( self._gui_start )
+        GLib.idle_add( self._gui_update, text )
+    def on_rendering_output( self, work_done, work_started ):
+        if self._update_step is not None:
+            if not ( work_done % self._update_step == 0 or work_done == 1 ):
+                return
+        text = "Rendere Briefe... ({}/{})".format( work_done, work_started )
+        GLib.idle_add( self._gui_update, text )
+    def on_rendering_finished( self, work_done ):
+        text = "1 Brief gerendert!".format( work_done ) if work_done == 1 else "{} Briefe gerendert!".format( work_done )
+        GLib.idle_add( self._gui_update, text )
+    def on_compilation_start( self, work_done ):
+        text = "Kompiliere 1 Brief...".format( work_done ) if work_done == 1 else "Kompiliere {} Briefe...".format( work_done )
+        GLib.idle_add( self._gui_update, text )
+    def on_compilation_finished( self, work_done ):
+        text = "Fertig! 1 Brief kompiliert!".format( work_done ) if work_done == 1 else "Fertig! {} Briefe kompiliert!".format( work_done )
+        GLib.idle_add( self._gui_update, text )
+        GLib.idle_add( self._gui_stop )
+    def _gui_start( self ):
+        self._gui_spinner.start()
+    def _gui_update( self, text ):
+        self._gui_label.set_text( text )
+    def _gui_stop( self ):
+        self._gui_spinner.stop()
+        self._gui_assistant.set_page_complete( self._gui_page, True )
 class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
     class Page:
         """
@@ -62,36 +114,6 @@ class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
             page:
                 current page of the assistant
         """
-        class ThreadObject( ComposingRenderer ):
-            def __init__( self, lettercomposition, contracts, gui_objects, update_step=25 ):
-                output_file = '/tmp/export.pdf'
-                super().__init__( output_file, lettercomposition, contracts )
-                self._gui_spinner, self._gui_label, self._gui_assistant, self._gui_page = gui_objects
-                self._update_step = update_step
-            def on_start( self, work_left ):
-                text = "Starte ..."
-                GLib.idle_add( self._gui_start )
-                GLib.idle_add( self._gui_update, text )
-            def on_output( self, work_left, output ):
-                if self._update_step is not None:
-                    if not ( self.work_done % self._update_step == 0 or self.work_done == 1 ):
-                        return
-                text = "Prerendering ({}/{})".format( self.work_done, self.work_started )
-                GLib.idle_add( self._gui_update, text )
-            def on_finished( self, rendered_letters ):
-                GLib.idle_add( self._gui_update, "Finales Rendering... (bitte warten)" )
-                super().on_finished( rendered_letters )
-                num_letters = len( rendered_letters )
-                text = "Fertig! 1 Brief generiert!" if num_letters == 1 else "Fertig! {} Briefe generiert!".format( num_letters )
-                GLib.idle_add( self._gui_update, text )
-                GLib.idle_add( self._gui_stop )
-            def _gui_start( self ):
-                self._gui_spinner.start()
-            def _gui_update( self, text ):
-                self._gui_label.set_text( text )
-            def _gui_stop( self ):
-                self._gui_spinner.stop()
-                self._gui_assistant.set_page_complete( self._gui_page, True )
         # Collect GUI objects to be using during rendering
         assistant.set_page_complete( page, False )
         spinner = self.builder.get_object( "render_spinner" )
@@ -109,7 +131,7 @@ class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
                     object_session.expunge( letterpart )
             lettercomposition.append( letterpart, criterion )
         # Start the Thread
-        watcher = ThreadObject( lettercomposition, contracts, gui_objects )
+        watcher = LetterExporter( lettercomposition, contracts, gui_objects )
         watcher.start()
     # Callbacks
     def lettercompositor_changed_cb( self, lettercompositor, has_contents ):
