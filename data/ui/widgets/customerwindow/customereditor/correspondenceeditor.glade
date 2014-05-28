@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.18.3 -->
+<interface>
+  <requires lib="gtk+" version="3.10"/>
+  <object class="GtkListStore" id="letters_liststore">
+    <columns>
+      <!-- column-name letter -->
+      <column type="PyObject"/>
+    </columns>
+  </object>
+  <object class="GtkWindow" id="dummywindow">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkBox" id="content">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkScrolledWindow" id="scrolledwindow2">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="margin_left">1</property>
+            <property name="margin_right">1</property>
+            <property name="margin_top">1</property>
+            <property name="margin_bottom">1</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="window_placement">bottom-right</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkTreeView" id="letters_treeview">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="model">letters_liststore</property>
+                <property name="headers_clickable">False</property>
+                <property name="search_column">0</property>
+                <property name="fixed_height_mode">True</property>
+                <signal name="button-press-event" handler="letters_treeview_button_press_event_cb" swapped="no"/>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="letters_treeview_selection"/>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="letters_previewpdf_treeviewcolumn">
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">20</property>
+                    <child>
+                      <object class="GtkCellRendererPixbuf" id="letters_previewpdf_cellrendererpixbuf">
+                        <property name="stock_id">gtk-print-preview</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="letters_id_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="min_width">25</property>
+                    <property name="title" translatable="yes">ID</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="letters_id_cellrenderertext"/>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="letters_date_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">80</property>
+                    <property name="title" translatable="yes">Datum</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="letters_date_cellrenderertext"/>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="letters_contract_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">70</property>
+                    <property name="title" translatable="yes">Vertragsnr.</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="letters_contract_cellrenderertext"/>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="letters_contents_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="title" translatable="yes">Inhalt</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="letters_contents_cellrenderertext"/>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

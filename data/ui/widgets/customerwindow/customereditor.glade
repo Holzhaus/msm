@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.2 -->
+<!-- Generated with glade 3.18.3 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
   <object class="GtkWindow" id="dummywindow">
@@ -140,7 +140,7 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkBox" id="balanceeditorbox">
+                          <object class="GtkBox" id="correspondenceeditorbox">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="orientation">vertical</property>
@@ -153,10 +153,10 @@
                           </packing>
                         </child>
                         <child type="tab">
-                          <object class="GtkLabel" id="balanceeditorlabel">
+                          <object class="GtkLabel" id="correspondenceeditorlabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Soll / Haben</property>
+                            <property name="label" translatable="yes">Korrespondenz</property>
                           </object>
                           <packing>
                             <property name="position">4</property>

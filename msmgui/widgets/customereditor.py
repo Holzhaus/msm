@@ -4,7 +4,7 @@ from gi.repository import Gtk, GObject
 import core.database
 from msmgui.widgets.maineditor import MainEditor
 from msmgui.widgets.addresseditor import AddressEditor
-# from msmgui.widgets.balanceeditor import BalanceEditor
+from msmgui.widgets.correspondenceeditor import CorrespondenceEditor
 from msmgui.widgets.bankaccounteditor import BankaccountEditor
 from msmgui.widgets.contracteditor import ContractEditor
 from msmgui.widgets.base import ScopedDatabaseObject
@@ -39,8 +39,8 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( "maineditorbox" ).add( self._maineditor )
         self._addresseditor = AddressEditor( self._session )
         self.builder.get_object( "addresseditorbox" ).add( self._addresseditor )
-        # self._balanceeditor = BalanceEditor()
-        # self.builder.get_object( "balanceeditorbox" ).add( self._balanceeditor )
+        self._correspondenceeditor = CorrespondenceEditor( self._session )
+        self.builder.get_object( "correspondenceeditorbox" ).add( self._correspondenceeditor )
         self._bankaccounteditor = BankaccountEditor( self._session )
         self.builder.get_object( "bankaccounteditorbox" ).add( self._bankaccounteditor )
         self._contracteditor = ContractEditor( self._session )
@@ -48,7 +48,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
 
         self._maineditor.connect( "changed", self.check_changes )
         self._addresseditor.connect( "changed", self.check_changes )
-        # self._balanceeditor.connect( "changed", self.check_changes )
+        self._correspondenceeditor.connect( "changed", self.check_changes )
         self._bankaccounteditor.connect( "changed", self.check_changes )
         self._contracteditor.connect( "changed", self.check_changes )
 
@@ -75,7 +75,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.signals_blocked = True
         self._maineditor.start_edit( self._customer )
         self._addresseditor.start_edit( self._customer )
-        # self._balanceeditor.start_edit( self._customer )
+        self._correspondenceeditor.start_edit( self._customer )
         self._bankaccounteditor.start_edit( self._customer )
         self._contracteditor.start_edit( self._customer )
         self.signals_blocked = False
@@ -189,7 +189,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.signals_blocked = True
         self._maineditor._gui_clear()
         self._addresseditor._gui_clear()
-        # self._balanceeditor._gui_clear()
+        self._correspondenceeditor._gui_clear()
         self._bankaccounteditor._gui_clear()
         self._contracteditor._gui_clear()
         self.builder.get_object( 'save_button' ).set_sensitive( False )
@@ -200,7 +200,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.signals_blocked = True
         self._maineditor._gui_fill()
         self._addresseditor._gui_fill()
-        # self._balanceeditor._gui_fill()
+        self._correspondenceeditor._gui_fill()
         self._bankaccounteditor._gui_fill()
         self._contracteditor._gui_fill()
         self.signals_blocked = False
