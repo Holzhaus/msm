@@ -11,6 +11,7 @@ import os
 import tempfile
 import cgitb
 import traceback
+import threading
 
 # If gettext is not used
 try: _
@@ -68,10 +69,12 @@ class Hook:
         self.context = context # number of source code lines per frame
         self.file = file or sys.stdout # place to send the output
         self.dialog = dialog
+        self.done = False
 
     def __call__( self, etype, evalue, etb ):
-        if etype not in ( KeyboardInterrupt, SystemExit ):
-            self.handle( ( etype, evalue, etb ) )
+        if etype not in ( KeyboardInterrupt, SystemExit ) and not self.done:
+            self.done = True
+            GLib.idle_add( self.handle, ( etype, evalue, etb ) )
 
     def handle( self, info=None ):
         info = info or sys.exc_info()
@@ -80,11 +83,6 @@ class Hook:
             doc = cgitb.text( info, self.context )
         except: # just in case something goes wrong
             doc = ''.join( traceback.format_exception( *info ) )
-
-        d = self.dialog( doc, *info )
-        d.run()
-        GLib.idle_add( Gtk.main_quit )
-        d.destroy()
 
         if self.logdir is not None:
             suffix = '.txt'
@@ -100,12 +98,40 @@ class Hook:
         try:
             self.file.flush()
         except: pass
+
+        d = self.dialog( doc, *info )
+        d.run()
         sys.exit( 1 )
 
-def enable( logdir=None, context=5, file=None, dialog=ExceptionDialog ):
+def install_threads():
+    """
+    Workaround for sys.excepthook thread bug
+    From
+    http://spyced.blogspot.com/2007/06/workaround-for-sysexcepthook-bug.html
+    (https://sourceforge.net/tracker/?func=detail&atid=105470&aid=1230540&group_id=5470).
+    Call once from __main__ before creating any threads.
+    If using psyco, call psyco.cannotcompile(threading.Thread.run)
+    since this replaces a new-style class method.
+    """
+    init_old = threading.Thread.__init__
+    def init( self, *args, **kwargs ):
+        init_old( self, *args, **kwargs )
+        run_old = self.run
+        def run_with_except_hook( *args, **kw ):
+            try:
+                run_old( *args, **kw )
+            except ( KeyboardInterrupt, SystemExit ):
+                raise
+            except:
+                sys.excepthook( *sys.exc_info() )
+        self.run = run_with_except_hook
+    threading.Thread.__init__ = init
+
+def install( logdir=None, context=5, file=None, dialog=ExceptionDialog ):
     sys.excepthook = Hook( logdir=logdir, context=context, file=file, dialog=dialog )
+    install_threads()
 
 if __name__ == "__main__":
-    enable()
+    install()
     GLib.idle_add( lambda: 1 / 0 ) # This raises a ZeroDivisionError for testing
     Gtk.main()

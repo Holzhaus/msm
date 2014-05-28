@@ -96,7 +96,7 @@ class MagazineSubscriptionManager( Gtk.Application ):
             sys.exit()
 
 if __name__ == "__main__":
-    msmgui.lib.exceptionhook.enable()
+    msmgui.lib.exceptionhook.install()
     GObject.threads_init() # Yup, we use threading in this application ;-)
     msmapp = MagazineSubscriptionManager()
     msmapp.run( None )
