@@ -1,5 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 from gi.repository import Gtk
 class AboutDialog( object ):
     def __init__( self, parent ):

@@ -1,5 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 import datetime
 from core.database import Letter, LetterPart, Note, PaymentType
 class Criterion:

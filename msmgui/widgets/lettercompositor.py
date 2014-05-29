@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, Gdk, GObject, GdkPixbuf
 from core.database import Note
 from core.lettercomposition import InvoicePlaceholder, Criterion

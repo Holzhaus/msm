@@ -1,5 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 from gi.repository import Gtk
 class GenericRowReference( object ):
     """For some strange reason (probably because of the weird constructor) I cannot

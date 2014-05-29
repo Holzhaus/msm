@@ -1,10 +1,12 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
+import locale
+import dateutil
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
-import locale
-import dateutil
 from msmgui.widgets.base import ScopedDatabaseObject
 class MagazineManagerRowReference( msmgui.rowreference.GenericRowReference ):
     def get_object( self ):

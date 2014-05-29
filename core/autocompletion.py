@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 import struct
 import csv
 import os.path
