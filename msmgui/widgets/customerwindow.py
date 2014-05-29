@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf, GLib
+from gi.repository import GObject, Gtk
 from core.config import Config
 import msmgui.widgets.customereditor
 import msmgui.widgets.customertable
@@ -30,7 +30,7 @@ class CustomerWindow( msmgui.widgets.base.RefreshableWindow ):
         active_only = Config.getboolean( "Interface", "active_only" )
         if not active_only:
             self.builder.get_object( "customers_showall_switch" ).set_active( not active_only )
-    """Callbacks"""
+    # Callbacks
     def customereditor_saved_cb( self, editor, customer_id, is_new ):
         if is_new:
             row = self._customertable.add_customer_by_id( customer_id )

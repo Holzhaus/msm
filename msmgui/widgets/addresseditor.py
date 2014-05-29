@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from gi.repository import Gtk, GObject
+import pytz
 import core.database
 import core.autocompletion
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
-import pytz
 class AddressRowReference( msmgui.rowreference.GenericRowReference ):
     def get_address( self ):
         """Returns the core.database.Address that is associated with the Gtk.TreeRow that this instance references."""
@@ -71,7 +71,7 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
     def start_edit( self, customer ):
         self._customer = customer
         self._gui_fill()
-    """Cell data funcs (control how Gtk.TreeModel contents are displayed)"""
+    # Cell data funcs (control how Gtk.TreeModel contents are displayed)
     def street_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = AddressRowReference( model, model.get_path( treeiter ) )
         address = rowref.get_address()
@@ -112,7 +112,7 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
-        """Callbacks"""
+    # Callbacks
     def addresses_add_button_clicked_cb( self, button ):
         if self.signals_blocked: return
         address = self._customer.add_address( "", "" )

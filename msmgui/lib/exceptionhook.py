@@ -5,13 +5,13 @@ This is derived from a PyGTK-script by Jonas Wagner <jonas@29a.ch>
 URL: http://29a.ch/2009/1/8/pygtk-exception-hook
 It was modified to work with Python 3.x and PyGObject Introspection.
 """
-from gi.repository import Gtk, GLib, Pango
 import sys
 import os
 import tempfile
 import cgitb
 import traceback
 import threading
+from gi.repository import Gtk, GLib, Pango
 
 # If gettext is not used
 try: _

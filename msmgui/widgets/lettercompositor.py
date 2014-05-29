@@ -8,11 +8,11 @@ COLUMN_PYOBJECT, COLUMN_TEXT, COLUMN_PIXBUF = range( 3 )
 DRAG_ACTION = Gdk.DragAction.COPY
 
 class LetterPartRowReference( msmgui.rowreference.GenericRowReference ):
-        def get_object( self ):
-            """Returns the core.database.Invoice that is associated with the Gtk.TreeRow that this instance references."""
-            row = self.get_row()
-            obj = row[0]
-            return obj
+    def get_object( self ):
+        """Returns the core.database.Invoice that is associated with the Gtk.TreeRow that this instance references."""
+        row = self.get_row()
+        obj = row[0]
+        return obj
 class LetterCompositor( Gtk.Box ):
     __gsignals__ = {
         'changed': ( GObject.SIGNAL_RUN_FIRST, None, ( bool, ) )
@@ -61,7 +61,6 @@ class DragArea( Gtk.IconView ):
         self.set_model( model )
         self.add_item( InvoicePlaceholder() )
         for note in Note.get_all():
-            print( note )
             self.add_item( note )
             obj_session = note.session
             if obj_session:

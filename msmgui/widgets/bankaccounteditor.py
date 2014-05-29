@@ -63,7 +63,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
     def start_edit( self, customer ):
         self._customer = customer
         self._gui_fill()
-    """Cell data funcs (control how Gtk.TreeModel contents are displayed)"""
+    # Cell data funcs (control how Gtk.TreeModel contents are displayed)
     def iban_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = BankaccountRowReference( model, model.get_path( treeiter ) )
         bankaccount = rowref.get_bankaccount()
@@ -97,7 +97,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
             new_text = ""
             # TODO: default ownername in italics
         cellrenderer.set_property( 'text', new_text )
-    """Callbacks"""
+    # Callbacks
     def bankaccounts_add_button_clicked_cb( self, button ):
         if self.signals_blocked: return
         bankaccount = self._customer.add_bankaccount( "" )

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import Gtk, GObject, GLib
-import core.database
-import msmgui.widgets.invoicetable
+import logging
+logger = logging.getLogger( __name__ )
 import locale
 import datetime
 import threading
 import dateutil
+from gi.repository import Gtk, GObject, GLib
+import core.database
 from core.errors import InvoiceError
+import msmgui.widgets.invoicetable
 from msmgui.widgets.base import ScopedDatabaseObject
 class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
@@ -80,9 +82,8 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
                     try:
                         invoice = contract.add_invoice( **self.invoice_options )
                     except InvoiceError as err:
-                        print( err )
+                        logger.critical( "Error adding invoice", err )
                         invoice = None
-                        # raise
                     if invoice is not None:
                         self.invoices.append( invoice )
                     i += 1

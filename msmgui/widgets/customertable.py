@@ -85,7 +85,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         self._filter = ""
         self._selection_blocked = False
         self._current_selection = None
-    """Data interaction"""
+    # Data interaction
     def clear( self ):
         self.builder.get_object( "customers_liststore" ).clear()
     def _refresh_generator( self, step=25 ):
@@ -154,7 +154,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         model = rowref.get_model()
         treeiter = rowref.get_iter()
         model.remove( treeiter ) # Remove row from table
-    """Getting and setting rows"""
+    # Getting and setting rows
     def _get_rowref_by_customer_id( self, customer_id ):
         if not isinstance( customer_id, int ):
             raise TypeError( "Expected int, not {}".format( type( customer_id ).__name__ ) )
@@ -170,7 +170,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         if rowref is None:
             raise ValueError( "No row for given customer_id" )
         rowref.update_row()
-    """Filtering stuff"""
+    # Filtering stuff
     @property
     def filter( self ):
         """The string used to filter the table"""
@@ -216,7 +216,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
                 if self.filter.lower() in row[column].lower():
                     return True
         return False
-    """ Selection of a row """
+    # Selection of a row
     @property
     def selection( self ):
         """The string used to filter the table"""
@@ -252,7 +252,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         if self.selection_blocked:
             return False
         return True
-    """Callbacks"""
+    # Callbacks
     def customers_treeview_selection_changed_cb( self, selection ):
         if self.selection_blocked:
             self.selection = self.selection # Restore current selection
@@ -261,6 +261,6 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         if treeiter:
             self._current_selection = CustomerRowReference.new_by_iter( model, treeiter )
         else:
-             self._current_selection = None
+            self._current_selection = None
         GLib.idle_add( self.refilter )
         self.emit( "selection-changed" )

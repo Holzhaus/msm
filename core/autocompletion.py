@@ -4,8 +4,6 @@ import os.path
 import zipfile
 import itertools
 import io
-import locale
-
 from core.config import Config
 csv.register_dialect( 'opengeodb', delimiter="\t", quoting=csv.QUOTE_NONE, skipinitialspace=False, quotechar='', doublequote=False )
 csv.register_dialect( 'semicolonsep', delimiter=";", quoting=csv.QUOTE_MINIMAL, skipinitialspace=False, quotechar='"', doublequote=False )
@@ -107,7 +105,6 @@ class AbstractBankInfoStore( TaggedInfoStore ):
     def get( self, tag, key, value ):
         if key == 'bankcode' and tag in self.__class__.BANKCODE_FMT and self.__class__.BANKCODE_FMT[tag]['can_be_shorter']:
             value = value.lstrip( '0' )
-            print( value )
         return super().get( tag, key, value )
 class BankInfoStore( AbstractBankInfoStore ):
     BANKCODE_FMT = { 'DE': {'length': 8, 'can_be_shorter':False},

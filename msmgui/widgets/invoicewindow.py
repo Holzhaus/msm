@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import GObject, Gtk, Gdk, Gio, Poppler, GdkPixbuf
+from gi.repository import GObject, Gtk
 from core.config import Config
 import msmgui.widgets.invoicetable
-import datetime
-import core.database
 import msmgui.assistants.invoicing
 import msmgui.assistants.letterexport
 import msmgui.widgets.base
@@ -43,21 +41,6 @@ class InvoiceWindow( msmgui.widgets.base.RefreshableWindow ):
     def invoices_export_button_clicked_cb( self, button ):
         self._letterexportassistant.set_parent( self.get_toplevel() )
         self._letterexportassistant.show()
-
-        """pdfs = []
-        invoices = [] # FIXME
-        for invoice in invoices:
-            pdfs.append( core.letterrenderer.LetterGenerator.render_invoice( invoice ) )
-        self.add_status_message( ( "Eine Rechnung als PDF generiert." if len( pdfs ) == 1 else "%d Rechnungen als PDF generiert." % len( pdfs ) ) )"""
-        """document = Poppler.Document.new_from_file( "file://" + filename, None )
-        def edraw( widget, surface ):
-            page.render( surface )
-        page = document.get_page( 0 )
-        window = Gtk.Window( title="Hello World" )
-        window.connect( "delete-event", Gtk.main_quit )
-        window.connect( "draw", edraw )
-        window.set_app_paintable( True )
-        window.show_all()"""
     def invoicingassistant_saved_cb( self, assistant, num_invoices ):
         if num_invoices > 0:
             self.emit( "status-changed", ( "Eine Rechnung erstellt." if num_invoices == 1 else "%d Rechnungen erstellt." % num_invoices ) )

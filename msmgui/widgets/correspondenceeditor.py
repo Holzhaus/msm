@@ -3,9 +3,9 @@
 import locale
 from gi.repository import Gtk, GObject
 import core.database
+from core.letterrenderer import LetterPreviewRenderer
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
-from core.letterrenderer import LetterPreviewRenderer
 class CorrespondeceRowReference( msmgui.rowreference.GenericRowReference ):
     def get_letter( self ):
         """Returns the core.database.Letter that is associated with the Gtk.TreeRow that this instance references."""

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import Gtk, GObject
-from msmgui.widgets.base import ScopedDatabaseObject
-import dateutil
 import locale
+import dateutil
+from gi.repository import Gtk, GObject
 from core.database import GenderType
+from msmgui.widgets.base import ScopedDatabaseObject
 class MainEditor( Gtk.Box, ScopedDatabaseObject ):
     """Address editor inside the Customer editor"""
     __gsignals__ = {

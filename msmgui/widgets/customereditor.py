@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, GObject
 import core.database
 from msmgui.widgets.maineditor import MainEditor
@@ -87,7 +89,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
             if self.data_is_valid():
                 response = self.prompt_changes()
             else:
-                print( "Data is invalid" )
+                logger.debug( "Data is invalid" )
                 return False
             # FIXME Maybe it's better to check the response here and add a cancel button
         self._session.remove()
@@ -142,7 +144,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         elif response == Gtk.ResponseType.NO:
             self.reset()
         dialog.destroy()
-    """Gui Interaction"""
+    # GUI Interaction
     @property
     def signals_blocked( self ):
         return self._gui_signals_blocked
@@ -204,7 +206,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self._bankaccounteditor._gui_fill()
         self._contracteditor._gui_fill()
         self.signals_blocked = False
-    """Callbacks"""
+    # Callbacks
     def save_button_clicked_cb( self, button ):
         if self.signals_blocked: return
         self.save()
@@ -216,7 +218,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
     def check_changes( self, childeditor=None ):
         if self.signals_blocked: return
         if self.expanded:
-            print( "has changes?", self.has_changes() )
+            logger.debug( "Was the data in CustomerEditor changed? %r", self.has_changes() )
             if self.has_changes():
                 if self.data_is_valid():
                     self.expandable = True

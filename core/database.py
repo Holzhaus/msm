@@ -67,9 +67,6 @@ class DatabaseObject:
     def is_valid( self ):
         raise NotImplementedError
 Base = declarative_base( cls=DatabaseObject )
-
-zipcodes = {}
-bankcodes = {}
 Session = None
 
 class Database( object ):
@@ -93,7 +90,7 @@ class Database( object ):
         """
         global Session
         Database._uri = db_uri
-        print( "Connecting to:", db_uri )
+        logger.debug( "Connecting to: %s", db_uri )
         Database._engine = create_engine( self._uri )
         metadata = Base.metadata
         metadata.create_all( self._engine ) # create tables in database
@@ -253,7 +250,6 @@ class Magazine( Base ):
         return None
     def add_issue( self, year=datetime.date.today().year, number=0, date=datetime.date.today() ):
         issue = Issue( year, number, date )
-        print( issue )
         if issue:
             self.issues.append( issue )
             return issue
@@ -474,14 +470,13 @@ class Contract( Base ):
         else:
             limit = None
         issues = self.subscription.magazine.get_issues( startdate=startdate, enddate=enddate, limit=limit )
-        print( startdate, enddate, issues )
         return issues
     @property
     def invoices_open( self ):
         invoices = []
         for invoice in self.invoices:
             if invoice.value_left:
-                invoice.append( invoice )
+                invoices.append( invoice )
         return invoice
     def add_invoice( self, date=datetime.date.today(), maturity_date=None, maturity=datetime.timedelta( days=14 ), accounting_startdate=None, accounting_enddate=datetime.date.today() ):
         # assume missing values and do some crazy value checking

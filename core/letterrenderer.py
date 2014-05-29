@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import logging
+logger = logging.getLogger( __name__ )
 import os
 import sys
 import subprocess
@@ -13,7 +15,6 @@ import core.database
 from core.lib import pdflatex
 from core.lib import threadqueue
 from msmgui.widgets.base import ScopedDatabaseObject
-from core import lettercomposition
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
 class LatexEnvironment( jinja2.Environment ):
@@ -318,7 +319,7 @@ class LetterPreviewRenderer( LetterRenderer ):
                 opener = app_info.get_executable()
                 subprocess.call( [opener, filepath], stdout=FNULL, stderr=FNULL, shell=False )
             else:
-                print( "Can't find app that can open '{}' files".format( mime_type ) )
+                logger.critical( "Can't find app that can open '{}' files".format( mime_type ) )
         elif sys.platform.startswith( 'win32' ):
             # can't use os.startfile here, because maybe we need to remove the tempfile afterwards
             subprocess.call( ["start", "/WAIT", filepath], stdout=FNULL, stderr=FNULL, shell=True )

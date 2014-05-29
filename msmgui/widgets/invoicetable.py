@@ -86,7 +86,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         self._selection_blocked = False
         self._current_selection = None
 
-    """Data interaction"""
+    # Data interaction
     def clear( self ):
         self.builder.get_object( "invoices_liststore" ).clear()
     def get_contents( self ):
@@ -140,7 +140,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         model = rowref.get_model()
         treeiter = rowref.get_iter()
         model.remove( treeiter ) # Remove row from table
-    """Getting and setting rows"""
+    # Getting and setting rows
     def _get_rowref_by_invoice_id( self, invoice_id ):
         if not isinstance( invoice_id, int ):
             raise TypeError( "Expected int, not {}".format( type( invoice_id ).__name__ ) )
@@ -152,7 +152,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
                 return InvoiceRowReference( model, model.get_path( treeiter ) )
             treeiter = model.iter_next( treeiter )
         return None
-    """Filtering stuff"""
+    # Filtering stuff
     @property
     def filter( self ):
         """The string used to filter the table"""
@@ -199,7 +199,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
                 if self.filter.lower() in row[column].lower():
                     return True"""
         return False
-    """ Selection of a row """
+    # Selection of a row
     @property
     def selection( self ):
         """The string used to filter the table"""
@@ -235,7 +235,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         if self.selection_blocked:
             return False
         return True
-    """Cell data funcs (control how Gtk.TreeModel contents are displayed)"""
+    # Cell data funcs (control how Gtk.TreeModel contents are displayed)
     def id_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
         invoice = rowref.get_invoice()
@@ -279,7 +279,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
-    """Callbacks"""
+    # Callbacks
     def invoices_treeview_button_press_event_cb( self, treeview, event ):
         info = treeview.get_path_at_pos( int( event.x ), int( event.y ) )
         if not info:
@@ -301,6 +301,6 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         if treeiter:
             self._current_selection = InvoiceRowReference( model, model.get_path( treeiter ) )
         else:
-             self._current_selection = None
+            self._current_selection = None
         GLib.idle_add( self.refilter )
         self.emit( "selection-changed" )

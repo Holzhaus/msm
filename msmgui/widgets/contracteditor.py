@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from gi.repository import Gtk, GObject
 import locale
 import dateutil.parser
+from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
@@ -67,7 +67,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
     def start_edit( self, customer ):
         self._customer = customer
         self._gui_fill()
-    """Cell data funcs (control how Gtk.TreeModel contents are displayed)"""
+    # Cell data funcs (control how Gtk.TreeModel contents are displayed)
     def startdate_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = ContractRowReference( model, model.get_path( treeiter ) )
         contract = rowref.get_contract()
@@ -164,7 +164,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
-    """Callbacks"""
+    # Callbacks
     def contracts_add_button_clicked_cb( self, button ):
         if self.signals_blocked: return
         contract = self._customer.add_contract( None )
