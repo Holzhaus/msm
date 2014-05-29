@@ -10,7 +10,7 @@ import string
 
 CONFIG_DIRNAME = "msm"
 CONFIG_FILENAME = "msm.cfg"
-CONFIG_APPDIR = os.path.join( os.path.dirname( __file__ ), os.pardir )
+CONFIG_APPDIR = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
 
 class Configuration( object ):
     def __init__( self ):
