@@ -188,14 +188,14 @@ def parse_contract_file( filename ):
                 try: int( row[0] )
                 except: continue
             customer_id = row[1]
-            startdate = row[8]
-            enddate = row[9]
-            value = row[10]
+            startdate = dateutil.parser.parse( row[8], dayfirst=True ).isoformat()
+            enddate = dateutil.parser.parse( row[9], dayfirst=True ).isoformat()
+            value = str( locale.atof( row[10] ) ) if row[10] else ''
             contr = etree.Element( "contract" )
             contr.set( 'startdate', startdate )
             contr.set( 'enddate', enddate )
             contr.set( 'value', value )
-            contr.set( 'subscription-name', subscription_name )
+            contr.set( 'old-subscription-name', subscription_name )
             additional_data[customer_id] = ( contracts, )
     return additional_data
 import io
