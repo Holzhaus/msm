@@ -2,34 +2,38 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import logging
 if __name__ == "__main__":
+    logger = logging.getLogger()
     sys.path = [os.path.abspath( '..' )] + sys.path
+else:
+    logger = logging.getLogger( __name__ )
 import locale
 try:
     from lxml import etree
-    print( "running with lxml.etree" )
+    logger.debug( "running with lxml.etree" )
 except ImportError:
     try:
         # Python 2.5
         import xml.etree.cElementTree as etree
-        print( "running with cElementTree on Python 2.5+" )
+        logger.debug( "running with cElementTree on Python 2.5+" )
     except ImportError:
         try:
             # Python 2.5
             import xml.etree.ElementTree as etree
-            print( "running with ElementTree on Python 2.5+" )
+            logger.debug( "running with ElementTree on Python 2.5+" )
         except ImportError:
             try:
                 # normal cElementTree install
                 import cElementTree as etree
-                print( "running with cElementTree" )
+                logger.debug( "running with cElementTree" )
             except ImportError:
                 try:
                     # normal ElementTree install
                     import elementtree.ElementTree as etree
-                    print( "running with ElementTree" )
+                    logger.debug( "running with ElementTree" )
                 except ImportError:
-                    print( "Failed to import ElementTree from any known place" )
+                    logger.debug( "Failed to import ElementTree from any known place" )
 import dateutil.parser
 from core.config import Config
 import core.database
@@ -62,19 +66,24 @@ def import_xml( session, filename ):
         bankaccount = None
         for el_bankaccount in el_customer.find( 'bankaccounts' ):
             bankaccount = customer.add_bankaccount( el_bankaccount.get( 'iban' ), el_bankaccount.get( 'bic' ), el_bankaccount.get( 'name' ), "" )
-        for el_contract in el_customer.find( 'contracts' ):
-            startdate = dateutil.parser.parse( el_contract.get( 'startdate' ), dayfirst=True ).date()
-            enddate = dateutil.parser.parse( el_contract.get( 'enddate' ), dayfirst=True ).date() if el_contract.get( 'enddate' ) else None
-            subscription = None
-            for s_id, s_name in subscription_mapping:
-                if el_contract.get( 'subscription' ) == s_name:
-                    subscription = core.database.Subscription.get_by_id( s_id, session=session )
-            try:
-                value = locale.atof( el_contract.get( 'value' ) )
-            except ValueError:
-                value = subscription.value
-            paymenttype = core.database.PaymentType.DirectWithdrawal if bankaccount is not None else core.database.PaymentType.Invoice
-            contract = customer.add_contract( subscription, startdate, enddate , value, paymenttype, address, address, bankaccount )
+        el_contracts = el_customer.find( 'contracts' )
+        if el_contracts is not None:
+            for el_contract in el_customer.find( 'contracts' ):
+                startdate = dateutil.parser.parse( el_contract.get( 'startdate' ), dayfirst=True ).date()
+                enddate = dateutil.parser.parse( el_contract.get( 'enddate' ), dayfirst=True ).date() if el_contract.get( 'enddate' ) else None
+                subscription = None
+                for s_id, s_name in subscription_mapping:
+                    if el_contract.get( 'old-subscription-name' ) == s_name:
+                        subscription = core.database.Subscription.get_by_id( s_id, session=session )
+                if subscription is None:
+                    logger.critical( "Can't find subscription: '%s'", el_contract.get( 'old-subscription-name' ) )
+                try:
+                    value = locale.atof( el_contract.get( 'value' ) )
+                except ValueError:
+                    logger.warning( 'Wrong contract value' )
+                    value = subscription.value
+                paymenttype = core.database.PaymentType.DirectWithdrawal if bankaccount is not None else core.database.PaymentType.Invoice
+                contract = customer.add_contract( subscription, startdate, enddate , value, paymenttype, address, address, bankaccount )
         session.add( customer )
     session.commit()
 if __name__ == "__main__":
