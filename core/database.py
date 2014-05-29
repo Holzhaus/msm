@@ -323,6 +323,24 @@ class Bankaccount( Base ):
         self.bic = bic # if bic else  Bankaccount.get_bic_by_iban( self.bic )
         self.bank = bank # if bank else Bankaccount.get_bank_by_bic( self.bic )
         self.owner = owner
+    @property
+    def iban_f( self ):
+        """
+        Get a formatted IBAN (i.e. an IBAN where every 4 chars are separated by a space)
+        Returns:
+            A formatted IBAN
+        """
+        length = 4
+        iban_f = ' '.join( self.iban[i:i + length] for i in range( 0, len( self.iban ), length ) )
+        return iban_f
+    @iban_f.setter
+    def iban_f( self, new_iban ):
+        """
+        Takes a formatted IBAN and assigns the stripped iban internally
+        Args:
+            A formatted IBAN
+        """
+        self.iban = new_iban.strip().replace( ' ', '' )
     def is_valid( self ):
         if not self.customer or not self.iban or not self.bic:
             return False

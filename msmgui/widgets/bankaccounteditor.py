@@ -68,7 +68,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = BankaccountRowReference( model, model.get_path( treeiter ) )
         bankaccount = rowref.get_bankaccount()
         if bankaccount.iban:
-            new_text = bankaccount.iban
+            new_text = bankaccount.iban_f
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
@@ -125,7 +125,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         model = self.builder.get_object( 'bankaccounts_liststore' )
         rowref = BankaccountRowReference( model, Gtk.TreePath( path_string ) )
         bankaccount = rowref.get_bankaccount()
-        bankaccount.iban = new_text.strip()
+        bankaccount.iban_f = new_text
         bank = core.autocompletion.Banks.get_by_iban( bankaccount.iban )
         if bank:
             bankaccount.bank = bank.name
