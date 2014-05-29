@@ -441,7 +441,7 @@ class Contract( Base ):
             return False
         if not self.startdate:
             return False
-        if self.enddate and self.enddate > self.startdate:
+        if self.enddate and self.enddate < self.startdate:
             return False
         if self.subscription.value_changeable and not self.value:
             return False
