@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 logger = logging.getLogger( __name__ )
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GLib
 import msmgui.widgets.customerwindow
 import msmgui.widgets.invoicewindow
 import msmgui.dialogs.about
@@ -53,9 +53,7 @@ class MainWindow( Gtk.ApplicationWindow ):
         notebook = self.builder.get_object( "notebook" )
         page = self.builder.get_object( "customerwindow" )
         # Call the loading routine manually for first time
-        self.notebook_switch_page_cb( notebook,
-                                      page,
-                                      notebook.get_current_page() )
+        GLib.idle_add( self.notebook_switch_page_cb, notebook, page, notebook.get_current_page() )
     def add_status_message( self, message ):
         """
         Adds a status message to the statusbar of the MainWindow.

@@ -23,12 +23,14 @@ class RefreshableWindow( Gtk.Overlay ):
     Callbacks
     """
     def _refresh_started_cb( self, calling_obj, user_data=None ):
+        logger.debug( 'Refresh started for obj %r', calling_obj )
         currently_refreshing_objects = [obj for obj in self._objects if obj.currently_refreshing is True and obj is not calling_obj]
         if len( currently_refreshing_objects ) == 0:
             self.set_sensitive( False )
             self._loadingspinner.show()
             self._loadingspinner.start()
     def _refresh_ended_cb( self, calling_obj, user_data=None ):
+        logger.debug( 'Refresh ended for obj %r', calling_obj )
         currently_refreshing_objects = [obj for obj in self._objects if obj.currently_refreshing is True and obj is not calling_obj]
         if len( currently_refreshing_objects ) == 0:
             self.set_sensitive( True )

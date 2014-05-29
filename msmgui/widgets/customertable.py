@@ -81,8 +81,8 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         self._customers_treemodelsort = Gtk.TreeModelSort( self._customers_treemodelfilter )
 
         # Add properties
-        self.currently_refreshing = False
         self.needs_refresh = True
+        self.currently_refreshing = False
         self._active_only = True
         self._filter = ""
         self._selection_blocked = False
