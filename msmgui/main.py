@@ -29,8 +29,8 @@ class MainWindow( Gtk.ApplicationWindow ):
                                     Gtk.IconSize.DIALOG, None )
         self.set_default_icon( pixbuf )
         # Set the window title
-        self.set_title( "POSITIONs-Manager" )
-        self.set_wmclass( "POSITIONs-Manager", "POSITIONs-Manager" )
+        self.set_title( "MSM" )
+        self.set_wmclass( "MSM", "MSM" )
         # Build GUI
         self.builder = Gtk.Builder()
         self.builder.add_from_file( "data/ui/main.glade" )

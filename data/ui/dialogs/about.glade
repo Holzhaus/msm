@@ -4,17 +4,17 @@
   <object class="GtkAboutDialog" id="content">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Über POSITIONs-Manager</property>
+    <property name="title" translatable="yes">Über MSM</property>
     <property name="resizable">False</property>
     <property name="type_hint">dialog</property>
-    <property name="program_name">POSITIONs-Manager</property>
+    <property name="program_name">Magazine Subscription Manager</property>
     <property name="version">0.1</property>
     <property name="copyright" translatable="yes">2013.</property>
-    <property name="comments" translatable="yes">Verwaltungsssoftware für POSITIONs-Abos und Buchführung.</property>
-    <property name="website">http://www.sdaj-netz.de/material/position/</property>
-    <property name="website_label" translatable="yes">POSITION auf sdaj-netz.de</property>
-    <property name="authors">Jan, SDAJ Bochum</property>
-    <property name="logo">../../images/position_logo.png</property>
+    <property name="comments" translatable="yes">Verwaltungsssoftware für Zeitschriften-Abonnements und Buchführung.</property>
+    <property name="website">http://github.com/Holzhaus/msm</property>
+    <property name="website_label" translatable="yes">MSM auf github.com</property>
+    <property name="authors">Jan H., Bochum</property>
+    <property name="logo">../../images/msm_logo.png</property>
     <property name="wrap_license">True</property>
     <property name="license_type">gpl-3-0</property>
     <signal name="close" handler="aboutdialog_close_cb" swapped="no"/>
