@@ -27,17 +27,23 @@ class InvoiceRowReference( msmgui.rowreference.GenericRowReference ):
         while hasattr( model, "get_model" ) and callable( getattr( model, "get_model" ) ) and model.get_model():
             model = model.get_model()
             models.append( model )
-        if models[-1] is not self.get_model():
+        models.reverse()
+        if models[0] is not self.get_model():
             raise RuntimeError( "TreeModel mismatch" )
+        models.pop( 0 )
+        print( models )
         treeiter = self.get_iter()
         for model in models:
             success, treeiter = model.convert_child_iter_to_iter( treeiter )
             if not success:
-                raise ValueError( "TreeIter invalid" )
+                logger.warning( "TreeIter invalid for model: %r", model )
+                return None
         return treeiter
     def get_selection_path( self, model ):
         """Return the Gtk.TreePath for the selection Gtk.TreeModel."""
         treeiter = self.get_selection_iter( model )
+        if not treeiter:
+            return None
         path = model.get_path( treeiter )
         return path
     def get_invoice( self ):
@@ -218,8 +224,10 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
             else:
                 rowref = new_selection
             if self.selection is None or self._current_selection.get_row() is not rowref.get_row():
-                treeselection.select_iter( rowref.get_selection_iter( treeselection.get_treeview().get_model() ) )
-                self._current_selection = rowref
+                new_selection_iter = rowref.get_selection_iter( treeselection.get_tree_view().get_model() )
+                if new_selection_iter is not None:
+                    treeselection.select_iter( new_selection_iter )
+                    self._current_selection = rowref
             else:
                 raise ValueError
         else:
