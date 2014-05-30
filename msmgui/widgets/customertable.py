@@ -35,7 +35,6 @@ class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
         if models[0] is not self.get_model():
             raise RuntimeError( "TreeModel mismatch" )
         models.pop( 0 )
-        print( models )
         treeiter = self.get_iter()
         for model in models:
             success, treeiter = model.convert_child_iter_to_iter( treeiter )
