@@ -51,7 +51,7 @@ class DatabaseObject:
         return session.query( func.count( cls.id ) ).scalar()
     @classmethod
     def get_by_id( cls, unique_id, session=None ):
-        logger.debug( 'get_all called for %r', cls )
+        logger.debug( 'get_by_id called for %r', cls )
         session = cls._mksession( session )
         q = session.query( cls ).filter_by( id=unique_id )
         return q.first() if q else None
