@@ -240,7 +240,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
                 rowref = self._get_rowref_by_customer_id( new_selection )
             else:
                 rowref = new_selection
-            if self.selection is None or self._current_selection.get_row() is not rowref.get_row():
+            if self.selection is None or self.selection != rowref:
                 new_selection_iter = rowref.get_selection_iter( treeselection.get_tree_view().get_model() )
                 if new_selection_iter is not None:
                     treeselection.select_iter( new_selection_iter )
@@ -269,8 +269,10 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
             return
         model, treeiter = selection.get_selected()
         if treeiter:
-            self._current_selection = CustomerRowReference.new_by_iter( model, treeiter )
+            rowref = CustomerRowReference.new_by_iter( model, treeiter )
         else:
-            self._current_selection = None
-        GLib.idle_add( self.refilter )
-        self.emit( "selection-changed" )
+            rowref = None
+        if self.selection != rowref:
+            self.selection = rowref
+            GLib.idle_add( self.refilter )
+            self.emit( "selection-changed" )
