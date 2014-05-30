@@ -308,8 +308,10 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
             return
         model, treeiter = selection.get_selected()
         if treeiter:
-            self._current_selection = InvoiceRowReference( model, model.get_path( treeiter ) )
+            rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
         else:
-            self._current_selection = None
-        GLib.idle_add( self.refilter )
-        self.emit( "selection-changed" )
+            rowref = None
+        if self.selection != rowref:
+            self.selection = rowref
+            GLib.idle_add( self.refilter )
+            self.emit( "selection-changed" )
