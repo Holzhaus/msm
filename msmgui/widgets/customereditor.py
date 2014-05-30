@@ -81,7 +81,6 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self._bankaccounteditor.start_edit( self._customer )
         self._contracteditor.start_edit( self._customer )
         self.signals_blocked = False
-        self._gui_fill_values()
         self.emit( "edit-started", int( self._customer.id ) if self._customer.id else 0 )
         return True
     def end_edit( self ):
@@ -196,15 +195,6 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self._contracteditor._gui_clear()
         self.builder.get_object( 'save_button' ).set_sensitive( False )
         self.builder.get_object( 'discard_button' ).set_sensitive( False )
-        self.signals_blocked = False
-    def _gui_fill_values( self ):
-        self._gui_clear()
-        self.signals_blocked = True
-        self._maineditor._gui_fill()
-        self._addresseditor._gui_fill()
-        self._correspondenceeditor._gui_fill()
-        self._bankaccounteditor._gui_fill()
-        self._contracteditor._gui_fill()
         self.signals_blocked = False
     # Callbacks
     def save_button_clicked_cb( self, button ):
