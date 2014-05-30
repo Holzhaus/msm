@@ -243,7 +243,11 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         model = self.builder.get_object( 'contracts_liststore' )
         rowref = ContractRowReference( model, Gtk.TreePath( path_string ) )
         contract = rowref.get_contract()
-        contract.enddate = dateutil.parser.parse( new_text.strip(), dayfirst=True ).date()
+        new_text = new_text.strip()
+        if new_text:
+            contract.enddate = dateutil.parser.parse( new_text, dayfirst=True ).date()
+        else:
+            contract.enddate = None
         self.emit( "changed" )
     def contracts_subscription_cellrenderercombo_changed_cb( self, combo, path_string, new_iter ):
         if self.signals_blocked: return
