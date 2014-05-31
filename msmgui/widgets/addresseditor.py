@@ -38,6 +38,7 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( "addresses_zipcode_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_zipcode_cellrenderertext" ), self.zipcode_cell_data_func )
         self.builder.get_object( "addresses_city_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_city_cellrenderertext" ), self.city_cell_data_func )
         self.builder.get_object( "addresses_co_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_co_cellrenderertext" ), self.co_cell_data_func )
+        self.builder.get_object( "addresses_recipient_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_recipient_cellrenderertext" ), self.recipient_cell_data_func )
         self.builder.get_object( "addresses_country_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "addresses_country_cellrenderercombo" ), self.country_cell_data_func )
         # Add Country List
         countries_liststore = self.builder.get_object( 'countries_liststore' )
@@ -114,6 +115,14 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
+    def recipient_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
+        rowref = AddressRowReference( model, model.get_path( treeiter ) )
+        address = rowref.get_address()
+        if address.recipient:
+            new_text = address.recipient
+        else:
+            new_text = ""
+        cellrenderer.set_property( 'text', new_text )
     # Callbacks
     def addresses_add_button_clicked_cb( self, button ):
         if self.signals_blocked: return
@@ -172,6 +181,13 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = AddressRowReference( model, Gtk.TreePath( path_string ) )
         address = rowref.get_address()
         address.co = new_text.strip()
+        self.emit( "changed" )
+    def addresses_recipient_cellrenderertext_edited_cb( self, cellrenderer, path_string, new_text ):
+        if self.signals_blocked: return
+        model = self.builder.get_object( 'addresses_liststore' )
+        rowref = AddressRowReference( model, Gtk.TreePath( path_string ) )
+        address = rowref.get_address()
+        address.recipient = new_text.strip()
         self.emit( "changed" )
     def addresses_country_cellrenderercombo_changed_cb( self, combo, path_string, new_iter ):
         if self.signals_blocked: return

@@ -173,6 +173,21 @@
                     </child>
                   </object>
                 </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="addresses_recipient_treeviewcolumn">
+                    <property name="resizable">True</property>
+                    <property name="sizing">fixed</property>
+                    <property name="fixed_width">20</property>
+                    <property name="title" translatable="yes">abw. Addressat</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="addresses_recipient_cellrenderertext">
+                        <property name="editable">True</property>
+                        <property name="placeholder_text">«Optional»</property>
+                        <signal name="edited" handler="addresses_recipient_cellrenderertext_edited_cb" swapped="no"/>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

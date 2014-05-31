@@ -217,25 +217,37 @@ class Address( Base ):
     __tablename__ = 'addresses'
     id = Column( Integer, primary_key=True )
     customer_id = Column( None, ForeignKey( 'customers.id' ) )
+    recipient = Column( String )
     co = Column( String )
     street = Column( String, nullable=False )
     zipcode = Column( String, nullable=False )
     city = Column( String, nullable=False )
     countrycode = Column( String, default="DE" )
     customer = relationship( Customer, primaryjoin=( customer_id == Customer.id ), backref=backref( 'addresses', order_by=id, cascade="all, delete, delete-orphan" ) )
-    def __init__( self, street, zipcode, city="", countrycode="DE", co="" ):
+    def __init__( self, street, zipcode, city="", countrycode="DE", recipient="", co="" ):
         self.street = street
         self.zipcode = zipcode
         self.city = city
         self.countrycode = countrycode
         self.co = co
+        self.recipient = recipient
     def is_valid( self ):
         if not self.street or not self.zipcode or not self.city or not self.countrycode:
             return False
         return True
     @property
     def string_f( self ):
-        return ( "%s, %s-%s %s" % ( self.street, self.countrycode, self.zipcode, self.city ) )
+        if self.recipient:
+            name = self.recipient
+        else:
+            name = self.customer.name
+        if self.co:
+            address_formatted = ( "%s c/o %s - %s, %s-%s %s" % ( name, self.co, self.street, self.countrycode, self.zipcode, self.city ) )
+        elif self.recipient:
+            address_formatted = ( "%s - %s, %s-%s %s" % ( name, self.street, self.countrycode, self.zipcode, self.city ) )
+        else:
+            address_formatted = ( "%s, %s-%s %s" % ( self.street, self.countrycode, self.zipcode, self.city ) )
+        return address_formatted
 
 class Magazine( Base ):
     __tablename__ = 'magazines'
