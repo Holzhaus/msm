@@ -118,26 +118,18 @@ class CustomerWindow( msmgui.widgets.base.RefreshableWindow ):
             if self._customereditor.expanded:
                 self._customereditor.expanded = False
     def customers_delete_button_clicked_cb( self, button ):
-        if self._customertable.selection is None:
+        selection = self._customertable.selection
+        if selection is None:
             raise RuntimeError( "Nothing selected" )
-        self._customertable.remove( self._customertable.selection )
-        """model, treeiter = self.builder.get_object( "customers_treeview" ).get_selection().get_selected()
-        if treeiter:
-            customer_id = model[treeiter][0]
-            liststore = self.builder.get_object( 'customers_liststore' )
-            if not liststore.iter_is_valid( treeiter ):
-                treeiter = self.builder.get_object( 'customers_treemodelsort' ).convert_iter_to_child_iter( treeiter )
-            if not liststore.iter_is_valid( treeiter ):
-                treeiter = self.builder.get_object( 'customers_treemodelfilter' ).convert_iter_to_child_iter( treeiter )
-            if liststore.iter_is_valid( treeiter ):
-                customer = self.manager.getCustomerById( customer_id )
-                dialog = Gtk.MessageDialog( self.builder.get_object( 'window' ), Gtk.DialogFlags.MODAL, Gtk.MessageType.WARNING, Gtk.ButtonsType.YES_NO, "Bist du sicher?" )
-                dialog.format_secondary_text( "Willst du den Benutzer „%s, %s“ (ID: %d) und alle verknüpften Daten (Addressen, Bankkonten, Verträge, Forderungen, Geldeingänge) wirklich löschen?" % ( customer.familyname, customer.prename, customer.id ) )
-                response = dialog.run()
-                if response == Gtk.ResponseType.YES:
-                    liststore.remove( treeiter )
-                    self.manager.delete( customer )
-                dialog.destroy()"""
+        customer = selection.get_customer()
+        # Create MessageDialog and ask if the user is sure
+        tl_window = self.get_toplevel()
+        dialog = Gtk.MessageDialog( tl_window, Gtk.DialogFlags.MODAL, Gtk.MessageType.WARNING, Gtk.ButtonsType.YES_NO, "Bist du sicher?" )
+        dialog.format_secondary_text( "Willst du den Benutzer „%s“ (ID: %d) und alle verknüpften Daten (Addressen, Bankkonten, Verträge, Forderungen, Geldeingänge) wirklich löschen?" % ( customer.name, customer.id ) )
+        response = dialog.run()
+        if response == Gtk.ResponseType.YES:
+            self._customertable.remove( selection )
+        dialog.destroy()
     def customers_search_entry_changed_cb( self, entry ):
         self._customertable.filter = entry.get_text().strip()
     def customers_showall_switch_notify_active_cb( self, switch, param_spec ):
