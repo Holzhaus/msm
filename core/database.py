@@ -161,12 +161,15 @@ class Customer( Base ):
         return name
     @property
     def letter_salutation( self ):
-        if self.honourific == 'Herr':
-            salutation = 'Sehr geehrter Herr {}'.format( self.familyname )
-        elif self.honourific == 'Frau':
-            salutation = 'Sehr geehrte Frau {}'.format( self.familyname )
-        elif self.honourific == 'Familie':
-            salutation = 'Sehr geehrte Familie {}'.format( self.familyname )
+        if self.familyname:
+            if self.honourific == 'Herr':
+                salutation = 'Sehr geehrter Herr {}'.format( self.familyname )
+            elif self.honourific == 'Frau':
+                salutation = 'Sehr geehrte Frau {}'.format( self.familyname )
+            elif self.honourific == 'Familie':
+                salutation = 'Sehr geehrte Familie {}'.format( self.familyname )
+            else:
+                salutation = 'Sehr geehrte Damen und Herren'
         else:
             salutation = 'Sehr geehrte Damen und Herren'
         return salutation
