@@ -38,6 +38,13 @@ except ImportError:
                     logger.critical( "Failed to import ElementTree from any known place" )
                     sys.exit( 1 )
 class CustomerParser:
+    @staticmethod
+    def get_customer_name( customer ):
+        if customer.get( 'prename' ):
+            name = "%s, %s" % ( customer.get( 'familyname' ), customer.get( 'prename' ) )
+        else:
+            name = customer.get( 'company' )
+        return name
     @classmethod
     def parse( cls, row, additional_data=None ):
         customer = etree.Element( 'customer' )
@@ -45,13 +52,14 @@ class CustomerParser:
         cls.parse_addresses( customer, row )
         cls.parse_bankaccounts( customer, row )
         if additional_data:
-            oldid = customer.get( 'old-id' )
-            if oldid in additional_data:
-                data = additional_data.pop( oldid )
+            customer_id = customer.get( 'old-id' )
+            if customer_id in additional_data:
+                data = additional_data.pop( customer_id )
                 for elem in data:
                     customer.append( elem )
             else:
-                logger.warning( "Customer '%s' - No contract found", oldid )
+                customer_name = cls.get_customer_name( customer )
+                logger.warning( "Customer '%s' (%s) - No contract found", customer_id, customer_name )
         return customer
     @staticmethod
     def parse_data( customer, row ):
@@ -87,9 +95,8 @@ class CustomerParser:
     def parse_bankaccounts( cls, customer, row ):
         # Bankaccounts
         bankaccounts = etree.SubElement( customer, "bankaccounts" )
-        customer_id = customer.get( 'old-id' )
         for i in range( 1, 4 ):
-            bankaccount = cls.get_bankaccount( customer_id, row, i )
+            bankaccount = cls.get_bankaccount( customer, row, i )
             if bankaccount is not None:
                 bankaccounts.append( bankaccount )
         customer.append( bankaccounts )
@@ -113,10 +120,12 @@ class CustomerParser:
             if contract is not None:
                 contracts.append( contract )
         else:
-            logger.warning( "Customer '%s' - No contracts found", customer_id )
+            logger.warning( "Customer '%s' (%s) - No contracts found", customer_id, cls.get_customer_name( customer ) )
         customer.append( contracts )
-    @staticmethod
-    def get_bankaccount( customer_id, row, i ):
+    @classmethod
+    def get_bankaccount( cls, customer, row, i ):
+        customer_id = customer.get( 'old-id' )
+        customer_name = cls.get_customer_name( customer )
         if ( row['KONTO%d' % i] and row['KONTO%d' % i] != '0' ) or row['BLZ%d' % i] or row['BANK%d' % i]:
             if row['KONTO%d' % i] == 'SEPA':
                 acc_iban = row['BANK%d' % i].replace( ' ', '' )
@@ -127,7 +136,7 @@ class CustomerParser:
                     try:
                         iban.check_iban( acc_iban )
                     except iban.IBANError:
-                        logger.warning( "Customer '%s' - Invalid IBAN: '%s' )", customer_id, acc_iban )
+                        logger.warning( "Customer '%s' (%s) - Invalid IBAN: '%s' )", customer_id, customer_name, acc_iban )
                         return
                     else:
                         bank = Banks.get_by_iban( acc_iban )
@@ -141,7 +150,7 @@ class CustomerParser:
                     accountnumber = row['KONTO%d' % i]
                     acc_iban = iban.create_iban( "DE", bankcode, accountnumber )
                 except iban.IBANError:
-                    logger.warning( "Customer '%s' - Could not convert to IBAN: ('%s', BC '%s' )", customer_id, accountnumber, bankcode )
+                    logger.warning( "Customer '%s' (%s) - Could not convert to IBAN: ('%s', BC '%s' )", customer_id, customer_name, accountnumber, bankcode )
                     return
                 else:
                     bank = Banks.get( 'DE', 'bankcode', bankcode )
