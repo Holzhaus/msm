@@ -286,7 +286,7 @@ class Subscription( Base ):
         self.value_changeable = value_changeable
         self.number_of_issues = number_of_issues
     def is_valid( self ):
-        if not self.magazine or not self.name or not self.value:
+        if not self.magazine or not self.name:
             return False
         return True
 class Issue( Base ):
@@ -443,7 +443,7 @@ class Contract( Base ):
             return False
         if self.enddate and self.enddate < self.startdate:
             return False
-        if self.subscription.value_changeable and not self.value:
+        if self.subscription.value_changeable and self.value is None:
             return False
         if self.paymenttype == PaymentType.DirectWithdrawal and not self.bankaccount:
             return False
