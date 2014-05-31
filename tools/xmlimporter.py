@@ -80,7 +80,7 @@ def import_xml( session, filename ):
                 try:
                     value = locale.atof( el_contract.get( 'value' ) )
                 except ValueError:
-                    logger.warning( 'Wrong contract value' )
+                    logger.warning( "Customer '%s' - Wrong contract value, using subscription value instead", customer.name )
                     value = subscription.value
                 paymenttype = core.database.PaymentType.DirectWithdrawal if bankaccount is not None else core.database.PaymentType.Invoice
                 contract = customer.add_contract( subscription, startdate, enddate , value, paymenttype, address, address, bankaccount )
