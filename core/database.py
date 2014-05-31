@@ -506,6 +506,9 @@ class Contract( Base ):
                 raise InvoiceError( "accounting period overlaps with the accounting period of the last invoice" )
             elif accounting_startdate < self.startdate:
                 raise InvoiceError( "accounting period starts before the contract ({} < {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), self.startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
+        if self.enddate is not None and self.enddate < accounting_enddate:
+            logger.info( 'account period ends after the contract was terminated, correcting...' )
+            accounting_enddate = self.enddate
         if accounting_startdate >= accounting_enddate:
             raise InvoiceError( "accounting_startdate has to be earlier than accountig_enddate ({} >= {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), accounting_enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
         # Now we can continue as everything should be fine now
@@ -514,9 +517,8 @@ class Contract( Base ):
         invoice.add_automatic_entries()
         if invoice.value == 0:
             self.invoices.remove( invoice )
-            session = sqlalchemy.inspect( invoice ).session
-            if session:
-                session.expunge( invoice )
+            if self.session:
+                self.session.expunge( invoice )
             raise InvoiceError( "value is zero" )
         invoice.assign_number()
         return invoice
