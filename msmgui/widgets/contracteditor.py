@@ -135,7 +135,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
             cellrenderer.set_sensitive( directwithdrawal )
         bankaccount = contract.bankaccount
         if bankaccount:
-            new_text = bankaccount.iban
+            new_text = bankaccount.iban_f
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
@@ -162,7 +162,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         combomodel = self.builder.get_object( "bankaccounts_liststore" )
         bankaccount = combomodel[treeiter][0]
         if bankaccount:
-            new_text = bankaccount.iban
+            new_text = bankaccount.iban_f
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
