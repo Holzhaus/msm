@@ -107,7 +107,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         contract = rowref.get_contract()
         address = contract.shippingaddress
         if address:
-            new_text = "{}, {}-{} {}".format( address.street, address.countrycode, address.zipcode, address.city )
+            new_text = address.string_f
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
