@@ -91,7 +91,16 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
         self.emit( "changed" )
     def birthday_entry_changed_cb( self, entry, user_data=None ):
         if self.signals_blocked: return
-        self._customer.birthday = dateutil.parser.parse( entry.get_text(), dayfirst=True ).date() if entry.get_text() else None
+        new_date = None
+        text = entry.get_text().strip()
+        if text:
+            try:
+                new_date = dateutil.parser.parse( text, dayfirst=True )
+            except:
+                logger.warning( 'Invalid date entered: %s', text )
+            else:
+                new_date = new_date.date()
+        self._customer.birthday = new_date
         self.emit( "changed" )
     def gender_combobox_changed_cb( self, combo ):
         if self.signals_blocked: return

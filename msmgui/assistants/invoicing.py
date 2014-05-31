@@ -142,7 +142,17 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
         self._session.expunge_all()
         date = datetime.date.today()
         maturity = datetime.timedelta( days=14 )
-        accounting_enddate = dateutil.parser.parse( self.builder.get_object( "invoice_accountingenddate_entry" ).get_text(), dayfirst=True ).date()
+
+        new_date = None
+        text = self.builder.get_object( "invoice_accountingenddate_entry" ).get_text().strip()
+        if text:
+            try:
+                new_date = dateutil.parser.parse( text, dayfirst=True )
+            except:
+                logger.warning( 'Invalid date entered: %s', text )
+            else:
+                new_date = new_date.date()
+        accounting_enddate = new_date
         self.invoice_generator_threadobj = ThreadObject( contracts, {"date":date, "maturity":maturity, "accounting_enddate": accounting_enddate}, gui_objects )
         self.invoice_generator_threadobj.start()
     def page_save_prepare_func( self, assistant, page ):

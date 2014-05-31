@@ -3,7 +3,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 import locale
-import dateutil.parser
+import dateutil
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
@@ -236,18 +236,32 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         model = self.builder.get_object( 'contracts_liststore' )
         rowref = ContractRowReference( model, Gtk.TreePath( path_string ) )
         contract = rowref.get_contract()
-        contract.startdate = dateutil.parser.parse( new_text.strip(), dayfirst=True ).date()
+        new_date = None
+        text = new_text.strip()
+        if text:
+            try:
+                new_date = dateutil.parser.parse( text, dayfirst=True )
+            except:
+                logger.warning( 'Invalid date entered: %s', text )
+            else:
+                new_date = new_date.date()
+        contract.startdate = new_date
         self.emit( "changed" )
     def contracts_enddate_cellrenderertext_edited_cb( self, cellrenderer, path_string, new_text ):
         if self.signals_blocked: return
         model = self.builder.get_object( 'contracts_liststore' )
         rowref = ContractRowReference( model, Gtk.TreePath( path_string ) )
         contract = rowref.get_contract()
-        new_text = new_text.strip()
-        if new_text:
-            contract.enddate = dateutil.parser.parse( new_text, dayfirst=True ).date()
-        else:
-            contract.enddate = None
+        new_date = None
+        text = new_text.strip()
+        if text:
+            try:
+                new_date = dateutil.parser.parse( text, dayfirst=True )
+            except:
+                logger.warning( 'Invalid date entered: %s', text )
+            else:
+                new_date = new_date.date()
+        contract.enddate = new_date
         self.emit( "changed" )
     def contracts_subscription_cellrenderercombo_changed_cb( self, combo, path_string, new_iter ):
         if self.signals_blocked: return

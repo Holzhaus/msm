@@ -242,7 +242,16 @@ class MagazineEditor( Gtk.Box, ScopedDatabaseObject ):
         model = self.builder.get_object( 'issues_liststore' )
         rowref = IssueRowReference( model, Gtk.TreePath( path_string ) )
         issue = rowref.get_issue()
-        issue.date = dateutil.parser.parse( new_text.strip(), dayfirst=True ).date()
+        new_date = None
+        text = new_text.strip()
+        if text:
+            try:
+                new_date = dateutil.parser.parse( text, dayfirst=True )
+            except:
+                logger.warning( 'Invalid date entered: %s', text )
+            else:
+                new_date = new_date.date()
+        issue.date = new_date
         self.emit( "changed" )
     def issues_number_cellrenderertext_edited_cb( self, cellrenderer, path_string, new_text ):
         if self.signals_blocked: return

@@ -196,7 +196,7 @@ class Customer( Base ):
         self.contracts.append( contract )
         return contract
     def is_valid( self ):
-        if not ( self.prename and self.familyname ) and not self.company1:
+        if not ( self.familyname or self.company1 ):
             return False
         return True
     def get_running_contracts( self, date=datetime.date.today() ):
