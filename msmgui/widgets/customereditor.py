@@ -123,6 +123,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
     def data_is_valid( self ):
         for obj in ( list( self._session.new ) + list( self._session.dirty ) ):
             if not obj.is_valid():
+                logger.info( 'Object has invalid data: %r', obj )
                 return False
             if isinstance( obj, core.database.Contract ):
                 if obj.bankaccount in self._session.deleted:
