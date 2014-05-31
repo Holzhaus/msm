@@ -3,7 +3,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 import locale
-import dateutil
+import dateutil.parser
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
@@ -213,7 +213,7 @@ class MagazineEditor( Gtk.Box, ScopedDatabaseObject ):
         issue = rowref.get_issue()
         if not isinstance( issue, core.database.Issue ):
             raise TypeError
-        new_text = issue.date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+        new_text = issue.date.strftime( locale.nl_langinfo( locale.D_FMT ) ) if issue.date else ""
         cellrenderer.set_property( 'text', new_text )
     def issues_number_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = IssueRowReference( model, model.get_path( treeiter ) )
@@ -247,8 +247,8 @@ class MagazineEditor( Gtk.Box, ScopedDatabaseObject ):
         if text:
             try:
                 new_date = dateutil.parser.parse( text, dayfirst=True )
-            except:
-                logger.warning( 'Invalid date entered: %s', text )
+            except Exception as error:
+                logger.warning( 'Invalid date entered: %s (%r)', text, error )
             else:
                 new_date = new_date.date()
         issue.date = new_date

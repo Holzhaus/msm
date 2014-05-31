@@ -3,7 +3,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 import locale
-import dateutil
+import dateutil.parser
 from gi.repository import Gtk, GObject
 from core.database import GenderType
 from msmgui.widgets.base import ScopedDatabaseObject
@@ -96,8 +96,8 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
         if text:
             try:
                 new_date = dateutil.parser.parse( text, dayfirst=True )
-            except:
-                logger.warning( 'Invalid date entered: %s', text )
+            except Exception as error:
+                logger.warning( 'Invalid date entered: %s (%r)', text, error )
             else:
                 new_date = new_date.date()
         self._customer.birthday = new_date

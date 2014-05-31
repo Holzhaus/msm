@@ -5,7 +5,7 @@ logger = logging.getLogger( __name__ )
 import locale
 import datetime
 import threading
-import dateutil
+import dateutil.parser
 from gi.repository import Gtk, GObject, GLib
 import core.database
 from core.errors import InvoiceError
@@ -82,7 +82,7 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
                     try:
                         invoice = contract.add_invoice( **self.invoice_options )
                     except InvoiceError as err:
-                        logger.critical( "Error adding invoice", err )
+                        logger.critical( "Error adding invoice: %r", err )
                         invoice = None
                     if invoice is not None:
                         self.invoices.append( invoice )
@@ -148,8 +148,8 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
         if text:
             try:
                 new_date = dateutil.parser.parse( text, dayfirst=True )
-            except:
-                logger.warning( 'Invalid date entered: %s', text )
+            except Exception as error:
+                logger.warning( 'Invalid date entered: %s (%r)', text, error )
             else:
                 new_date = new_date.date()
         accounting_enddate = new_date

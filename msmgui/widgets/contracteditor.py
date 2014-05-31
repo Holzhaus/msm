@@ -3,7 +3,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 import locale
-import dateutil
+import dateutil.parser
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
@@ -241,8 +241,8 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         if text:
             try:
                 new_date = dateutil.parser.parse( text, dayfirst=True )
-            except:
-                logger.warning( 'Invalid date entered: %s', text )
+            except Exception as error:
+                logger.warning( 'Invalid date entered: %s (%r)', text, error )
             else:
                 new_date = new_date.date()
         contract.startdate = new_date
@@ -257,8 +257,8 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         if text:
             try:
                 new_date = dateutil.parser.parse( text, dayfirst=True )
-            except:
-                logger.warning( 'Invalid date entered: %s', text )
+            except Exception as error:
+                logger.warning( 'Invalid date entered: %s (%r)', text, error )
             else:
                 new_date = new_date.date()
         contract.enddate = new_date
