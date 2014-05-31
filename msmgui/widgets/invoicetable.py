@@ -79,6 +79,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         self._invoices_treemodelsort = Gtk.TreeModelSort( self._invoices_treemodelfilter )
 
         self.builder.get_object( "invoices_id_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_id_cellrenderertext" ), self.id_cell_data_func )
+        self.builder.get_object( "invoices_customer_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_customer_cellrenderertext" ), self.customer_cell_data_func )
         self.builder.get_object( "invoices_contractrefid_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_contractrefid_cellrenderertext" ), self.contractrefid_cell_data_func )
         self.builder.get_object( "invoices_number_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_number_cellrenderertext" ), self.number_cell_data_func )
         self.builder.get_object( "invoices_date_treeviewcolumn" ).set_cell_data_func( self.builder.get_object( "invoices_date_cellrenderertext" ), self.date_cell_data_func )
@@ -250,6 +251,15 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         invoice = rowref.get_invoice()
         new_text = invoice.id if invoice.id else ""
         cellrenderer.set_property( 'text', str( new_text ) )
+    def customer_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
+        rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
+        invoice = rowref.get_invoice()
+        contract = invoice.contract
+        if not contract or not contract.refid:
+            raise RuntimeError
+        customer = contract.customer
+        new_text = customer.name
+        cellrenderer.set_property( 'text', new_text )
     def contractrefid_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
         invoice = rowref.get_invoice()
