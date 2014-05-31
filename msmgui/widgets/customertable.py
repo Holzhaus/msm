@@ -60,7 +60,7 @@ class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
 
 class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
     MIN_FILTER_LEN = 3 # what is the minimum length for the filter string
-    FILTER_COLUMNS = ( 1, 2, 11, 12 ) # which columns should be used for filtering
+    FILTER_COLUMNS = ( 1, 2, 7, 11, 12 ) # which columns should be used for filtering
     __gsignals__ = {
         'selection_changed': ( GObject.SIGNAL_RUN_FIRST, None, () ),
         'refresh-started': ( GObject.SIGNAL_RUN_FIRST, None, () ),
