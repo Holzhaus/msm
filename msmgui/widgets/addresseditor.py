@@ -7,7 +7,7 @@ import pytz
 import core.database
 import core.autocompletion
 import msmgui.rowreference
-from msmgui.widgets.base import ScopedDatabaseObject
+from msmgui.widgets.base import ScopedDatabaseObject, ConfirmationDialog
 class AddressRowReference( msmgui.rowreference.GenericRowReference ):
     def get_address( self ):
         """Returns the core.database.Address that is associated with the Gtk.TreeRow that this instance references."""
@@ -56,7 +56,12 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         if not isinstance( rowref, AddressRowReference ):
             raise TypeError( "Expected AddressRowReference, not {}".format( type( rowref ).__name__ ) )
         address = rowref.get_address()
-        # TODO: Check if address is currently in use
+        for contract in self._customer.contracts:
+            # check if address is in use and replace it
+            if address is contract.billingaddress:
+                contract.billingaddress = None
+            if address is contract.shippingaddress:
+                contract.shippingaddress = None
         if address not in self._session.new:
             self._session.delete( address )
         if address in self._customer.addresses:
@@ -135,7 +140,22 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         if treeiter is None:
             raise RuntimeError( "tried to remove an address, but none is currently selected" )
         rowref = AddressRowReference( model, model.get_path( treeiter ) )
-        self.remove( rowref )
+        address = rowref.get_address()
+        # If it is in use, create a ConfirmationDialog and ask if the user is sure
+        address_in_use = False
+        for contract in self._customer.contracts:
+            if address is contract.billingaddress or address is contract.shippingaddress:
+                address_in_use = True
+                break
+        if address_in_use:
+            message = "Die Adresse „%s“ ist in einem oder mehreren Verträgen als Rechnungs- oder Lieferadresse angegeben. Willst du die Adresse dennoch entfernen?" % address.string_f
+            dialog = ConfirmationDialog( self.get_toplevel(), message )
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:
+                self.remove( rowref )
+            dialog.destroy()
+        else:
+            self.remove( rowref )
     def addresses_treeview_selection_changed_cb( self, selection ):
         if self.signals_blocked: return
         removebutton = self.builder.get_object( 'addresses_remove_button' )

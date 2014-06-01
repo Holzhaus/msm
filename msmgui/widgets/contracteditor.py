@@ -7,7 +7,7 @@ import dateutil.parser
 from gi.repository import Gtk, GObject
 import core.database
 import msmgui.rowreference
-from msmgui.widgets.base import ScopedDatabaseObject
+from msmgui.widgets.base import ScopedDatabaseObject, ConfirmationDialog
 class ContractRowReference( msmgui.rowreference.GenericRowReference ):
     def get_contract( self ):
         """Returns the core.database.Contract that is associated with the Gtk.TreeRow that this instance references."""
@@ -60,6 +60,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         model = rowref.get_model()
         treeiter = rowref.get_iter()
         model.remove( treeiter ) # Remove row from table
+        self.emit( 'changed' )
     def _gui_clear( self ):
         self.builder.get_object( "contracts_liststore" ).clear()
     def _gui_fill( self ):
@@ -179,8 +180,14 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         if treeiter is None:
             raise RuntimeError( "tried to remove a contract, but none is currently selected" )
         rowref = ContractRowReference( model, model.get_path( treeiter ) )
-        self.remove( rowref )
-        self.emit( "changed" )
+        contract = rowref.get_contract()
+        # Create a ConfirmationDialog and ask if the user is sure
+        message = "Willst du den Vertrag „%s“ wirklich löschen? Wenn der Vertrag gekündigt wurde, kannst du stattdessen besser ein Datum beim Feld „Vertragsende“ angeben. Dennoch löschen?" % contract.refid
+        dialog = ConfirmationDialog( self.get_toplevel(), message )
+        response = dialog.run()
+        if response == Gtk.ResponseType.YES:
+            self.remove( rowref )
+        dialog.destroy()
     def contracts_treeview_selection_changed_cb( self, selection ):
         if self.signals_blocked: return
         removebutton = self.builder.get_object( 'contracts_remove_button' )

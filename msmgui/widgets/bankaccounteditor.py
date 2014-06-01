@@ -6,7 +6,7 @@ from gi.repository import Gtk, GObject
 import core.database
 import core.autocompletion
 import msmgui.rowreference
-from msmgui.widgets.base import ScopedDatabaseObject
+from msmgui.widgets.base import ScopedDatabaseObject, ConfirmationDialog
 class BankaccountRowReference( msmgui.rowreference.GenericRowReference ):
     def get_bankaccount( self ):
         """Returns the core.database.Bankaccount that is associated with the Gtk.TreeRow that this instance references."""
@@ -48,7 +48,10 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         if not isinstance( rowref, BankaccountRowReference ):
             raise TypeError( "Expected BankaccountRowReference, not {}".format( type( rowref ).__name__ ) )
         bankaccount = rowref.get_bankaccount()
-        # TODO: Check if bankaccount is currently in use
+        for contract in self._customer.contracts:
+            # check if bankaccount is in use and replace it
+            if bankaccount is contract.bankaccount:
+                contract.bankaccount = None
         if bankaccount not in self._session.new:
             self._session.delete( bankaccount )
         if bankaccount in self._customer.bankaccounts:
@@ -56,6 +59,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         model = rowref.get_model()
         treeiter = rowref.get_iter()
         model.remove( treeiter ) # Remove row from table
+        self.emit( 'changed' )
     def _gui_clear( self ):
         self.builder.get_object( "bankaccounts_liststore" ).clear()
     def _gui_fill( self ):
@@ -112,8 +116,22 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         if treeiter is None:
             raise RuntimeError( "tried to remove an address, but none is currently selected" )
         rowref = BankaccountRowReference( model, model.get_path( treeiter ) )
-        self.remove( rowref )
-        self.emit( "changed" )
+        bankaccount = rowref.get_bankaccount()
+        # If it is in use, create a ConfirmationDialog and ask if the user is sure
+        bankaccount_in_use = False
+        for contract in self._customer.contracts:
+            if bankaccount is contract.bankaccount:
+                bankaccount_in_use = True
+                break
+        if bankaccount_in_use:
+            message = "Die Bankverbindung „%s“ wird zur Zeit einem oder mehreren Verträgen zur Abbuchung von Lastschriften verwendet. Dennoch löschen?" % bankaccount.iban_f
+            dialog = ConfirmationDialog( self.get_toplevel(), message )
+            response = dialog.run()
+            if response == Gtk.ResponseType.YES:
+                self.remove( rowref )
+            dialog.destroy()
+        else:
+            self.remove( rowref )
     def bankaccounts_treeview_selection_changed_cb( self, selection ):
         if self.signals_blocked: return
         removebutton = self.builder.get_object( 'bankaccounts_remove_button' )

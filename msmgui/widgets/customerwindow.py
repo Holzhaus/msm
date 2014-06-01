@@ -122,10 +122,9 @@ class CustomerWindow( msmgui.widgets.base.RefreshableWindow ):
         if selection is None:
             raise RuntimeError( "Nothing selected" )
         customer = selection.get_customer()
-        # Create MessageDialog and ask if the user is sure
-        tl_window = self.get_toplevel()
-        dialog = Gtk.MessageDialog( tl_window, Gtk.DialogFlags.MODAL, Gtk.MessageType.WARNING, Gtk.ButtonsType.YES_NO, "Bist du sicher?" )
-        dialog.format_secondary_text( "Willst du den Benutzer „%s“ (ID: %d) und alle verknüpften Daten (Addressen, Bankkonten, Verträge, Forderungen, Geldeingänge) wirklich löschen?" % ( customer.name, customer.id ) )
+        # Create ConfirmationDialog and ask if the user is sure
+        message = "Willst du den Benutzer „%s“ (ID: %d) und alle verknüpften Daten (Addressen, Bankkonten, Verträge, Forderungen, Geldeingänge) wirklich löschen?" % ( customer.name, customer.id )
+        dialog = msmgui.widgets.base.ConfirmationDialog( self.get_toplevel(), message )
         response = dialog.run()
         if response == Gtk.ResponseType.YES:
             self._customertable.remove( selection )
