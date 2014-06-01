@@ -155,8 +155,8 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         if not isinstance( rowref, CustomerRowReference ):
             raise TypeError( "Expected msmgui.customertable.CustomerRowReference, not {}".format( type( rowref ).__name__ ) )
         customer = rowref.get_customer()
-        self.session().delete( self.session().merge( customer ) )
-        self.session().commit()
+        self.session.delete( self.session.merge( customer ) )
+        self.session.commit()
         self.session.remove()
         model = rowref.get_model()
         treeiter = rowref.get_iter()

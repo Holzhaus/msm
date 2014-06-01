@@ -142,8 +142,8 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         if not isinstance( rowref, InvoiceRowReference ):
             raise TypeError( "Expected msmgui.invoicetable.InvoiceRowReference, not {}".format( type( rowref ).__name__ ) )
         invoice = rowref.get_invoice()
-        self.session().delete( self.session().merge( invoice ) )
-        self.session().commit()
+        self.session.delete( self.session.merge( invoice ) )
+        self.session.commit()
         self.session.remove()
         model = rowref.get_model()
         treeiter = rowref.get_iter()
