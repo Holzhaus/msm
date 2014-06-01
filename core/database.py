@@ -8,6 +8,7 @@ import datetime
 import random
 import string
 import re
+import pytz
 import sqlalchemy
 from sqlalchemy import create_engine, func
 from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Date, ForeignKey
@@ -160,6 +161,18 @@ class Customer( Base ):
             name = self.company1
         return name
     @property
+    def fullname( self ):
+        if not self.familyname:
+            return ""
+        fullname = []
+        if self.title:
+            fullname.append( self.title )
+        if self.prename:
+            fullname.append( self.prename )
+        fullname.append( self.familyname )
+        name = " ".join( fullname )
+        return name
+    @property
     def letter_salutation( self ):
         if self.familyname:
             if self.honourific == 'Herr':
@@ -248,6 +261,39 @@ class Address( Base ):
         else:
             address_formatted = ( "%s, %s-%s %s" % ( self.street, self.countrycode, self.zipcode, self.city ) )
         return address_formatted
+    @property
+    def mailingaddress_lines( self ):
+        mailing_address = []
+        if self.recipient:
+            # use deviating recipient
+            mailing_address.append( self.recipient )
+            # Add c/o line of needed
+            if self.co:
+                mailing_address.append( "c/o %s" % self.co )
+        else:
+            # Add company line of needed
+            if self.customer.company1:
+                mailing_address.append( self.customer.company1 )
+                if self.customer.company2:
+                    mailing_address.append( self.customer.company2 )
+            # Add full name line of needed
+            if self.customer.fullname:
+                mailing_address.append( self.customer.fullname )
+            # Add c/o line of needed
+            if self.co:
+                mailing_address.append( "c/o %s" % self.co )
+            # Add department needed
+            if self.customer.department:
+                mailing_address.append( self.customer.department )
+        # Add street
+        mailing_address.append( self.street )
+        # Add zipcode and city
+        mailing_address.append( "%s %s" % ( self.zipcode, self.city ) )
+        # Add the country name if needed
+        if self.countrycode != "DE": # FIXME: Use default countrycode from config
+            if self.countrycode in pytz.country_names:
+                mailing_address.append( pytz.country_names[self.countrycode] )
+        return mailing_address
 
 class Magazine( Base ):
     __tablename__ = 'magazines'
