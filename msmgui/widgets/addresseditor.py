@@ -72,6 +72,7 @@ class AddressEditor( Gtk.Box, ScopedDatabaseObject ):
         self.emit( "changed" )
     def _gui_clear( self ):
         self.builder.get_object( "addresses_liststore" ).clear()
+        self.builder.get_object( 'addresses_remove_button' ).set_sensitive( False )
     def _gui_fill( self ):
         self._gui_clear()
         for address in self._customer.addresses:

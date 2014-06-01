@@ -63,6 +63,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         self.emit( 'changed' )
     def _gui_clear( self ):
         self.builder.get_object( "contracts_liststore" ).clear()
+        self.builder.get_object( 'contracts_remove_button' ).set_sensitive( False )
     def _gui_fill( self ):
         self._gui_clear()
         for contract in self._customer.contracts:

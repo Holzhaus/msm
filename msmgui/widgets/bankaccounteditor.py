@@ -62,6 +62,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         self.emit( 'changed' )
     def _gui_clear( self ):
         self.builder.get_object( "bankaccounts_liststore" ).clear()
+        self.builder.get_object( 'bankaccounts_remove_button' ).set_sensitive( False )
     def _gui_fill( self ):
         self._gui_clear()
         for bankaccount in self._customer.bankaccounts:
