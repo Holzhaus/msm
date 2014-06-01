@@ -69,13 +69,15 @@ class PrerenderThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
         return '\n'.join( list( self._prerender( letter ) ) )
     def _prerender( self, letter ):
         """ Generator function that prerenders a whole letter (yields it part by part). """
+        recipient = "\n".join( letter.contract.billingaddress.mailingaddress_lines )
         templatevars = {'closing':'Mit freundlichen Grüßen',
                         'signature':'POSITION\nAbo-Service',
-                        'recipient':"%s\n%s\n%s %s" % ( letter.contract.customer.name, letter.contract.billingaddress.street, letter.contract.billingaddress.zipcode, letter.contract.billingaddress.city ),
+                        'recipient':recipient,
                         'opening':letter.contract.customer.letter_salutation,
                         'date':letter.date.strftime( '%d.~%m~%Y' ),
                         'customer': letter.contract.customer,
                         'contract': letter.contract}
+
         for part in letter.contents:
             prerendered_part = self._prerender_part( templatevars, part )
             if prerendered_part:
