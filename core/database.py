@@ -659,7 +659,7 @@ class Note( LetterPart ):
         self.name = name
         self.template = template
 
-bkentry_association_table = Table( 'association', Base.metadata,
+bkentry_association_table = Table( 'bkentry_association', Base.metadata,
     Column( 'invoice_id', Integer, ForeignKey( 'invoices.id' ) ),
     Column( 'bookkeepingentry_id', Integer, ForeignKey( 'bookkeeping_entries.id' ) )
  )
