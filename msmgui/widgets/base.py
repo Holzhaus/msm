@@ -53,3 +53,9 @@ class ScopedDatabaseObject( object ):
         if type( session ) is not sqlalchemy.orm.scoping.scoped_session:
             raise RuntimeError( "Can't __init__ without a session!" )
         self._session = session
+
+from gi.repository import Gtk
+class ConfirmationDialog( Gtk.MessageDialog ):
+    def __init__( self, parent_window, message ):
+        super().__init__( parent_window, Gtk.DialogFlags.MODAL, Gtk.MessageType.WARNING, Gtk.ButtonsType.YES_NO, "Bist du sicher?" )
+        self.format_secondary_text( message )
