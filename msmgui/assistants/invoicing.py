@@ -133,6 +133,15 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
                 label.set_text( "Fertig! {} Rechnungen aus {} Verträgen generiert.".format( num_invoices, num_contracts ) )
                 spinner.stop()
                 assistant.set_page_complete( page, True )
+        def parse_date( text ):
+            new_date = None
+            if text:
+                try:
+                    new_date = dateutil.parser.parse( text, dayfirst=True )
+                except Exception as error:
+                    logger.warning( 'Invalid date entered: %s (%r)', text, error )
+                else:
+                    return new_date.date()
         assistant.set_page_complete( page, False )
         spinner = self.builder.get_object( "generate_spinner" )
         label = self.builder.get_object( "generate_label" )
@@ -140,20 +149,16 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
         self._session.close()
         contracts = core.database.Contract.get_all( session=self.session ) # We expunge everything, use it inside the thread and readd it later
         self._session.expunge_all()
-        date = datetime.date.today()
-        maturity = datetime.timedelta( days=14 )
-
-        new_date = None
-        text = self.builder.get_object( "invoice_accountingenddate_entry" ).get_text().strip()
-        if text:
-            try:
-                new_date = dateutil.parser.parse( text, dayfirst=True )
-            except Exception as error:
-                logger.warning( 'Invalid date entered: %s (%r)', text, error )
-            else:
-                new_date = new_date.date()
-        accounting_enddate = new_date
-        self.invoice_generator_threadobj = ThreadObject( contracts, {"date":date, "maturity":maturity, "accounting_enddate": accounting_enddate}, gui_objects )
+        invoice_date = parse_date( self.builder.get_object( "invoice_date_entry" ).get_text().strip() )
+        if not invoice_date:
+            invoice_date = datetime.date.today()
+        maturity_date = parse_date( self.builder.get_object( "invoice_maturitydate_entry" ).get_text().strip() )
+        if not maturity_date:
+            maturity_date = invoice_date + datetime.timedelta( days=14 )
+        accounting_enddate = parse_date( self.builder.get_object( "invoice_accountingenddate_entry" ).get_text().strip() )
+        if not accounting_enddate:
+            accounting_enddate = invoice_date
+        self.invoice_generator_threadobj = ThreadObject( contracts, {"date":invoice_date, "maturity_date":maturity_date, "accounting_enddate": accounting_enddate}, gui_objects )
         self.invoice_generator_threadobj.start()
     def page_save_prepare_func( self, assistant, page ):
         class ThreadObject( GObject.GObject, threading.Thread ):
