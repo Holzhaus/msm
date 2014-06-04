@@ -1,17 +1,17 @@
 ((* extends "note.template" *))
 ((* block subject *))Umstellung auf SEPA-Lastschriftverfahren((* endblock subject *))
 ((* block content *))
-zur Zeit zahlen Sie ihr (((contract.subscription.name))) der Zeitschrift „(((contract.subscription.magazine.name)))“ (Vertragsnummer: (((contract.refid)))) per Lastschrift (Einzugsermächtigungsverfahren). Im Rahmen der Einführung des einheitlichen Euro-Zahlungsverkehrsraums (Single Euro Payments Area, SEPA) stellen wir ab sofort auf das europaweit einheitliche SEPA-Basis-Lastschriftverfahren um. Die von Ihnen bereits erteilte Einzugsermächtigung wird dabei als SEPA-Lastschriftmandat weitergenutzt. Dieses Lastschriftmandat wird durch unsere oben genannte Gläubiger-Identifikationsnummer und die unten aufgeführte Mandatsreferenz und gekennzeichnet, die von uns bei allen Lastschrifteinzügen angegeben werden. Da diese Umstellung durch uns erfolgt, brauchen Sie nichts unternehmen.
+zur Zeit zahlen Sie ihr (((contract.subscription.name|escape_tex))) der Zeitschrift „(((contract.subscription.magazine.name|escape_tex)))“ (Vertragsnummer: (((contract.refid|escape_tex)))) per Lastschrift (Einzugsermächtigungsverfahren). Im Rahmen der Einführung des einheitlichen Euro-Zahlungsverkehrsraums (Single Euro Payments Area, SEPA) stellen wir ab sofort auf das europaweit einheitliche SEPA-Basis-Lastschriftverfahren um. Die von Ihnen bereits erteilte Einzugsermächtigung wird dabei als SEPA-Lastschriftmandat weitergenutzt. Dieses Lastschriftmandat wird durch unsere oben genannte Gläubiger-Identifikationsnummer und die unten aufgeführte Mandatsreferenz und gekennzeichnet, die von uns bei allen Lastschrifteinzügen angegeben werden. Da diese Umstellung durch uns erfolgt, brauchen Sie nichts unternehmen.
 
 Lastschriften werden weiterhin von Ihrem folgenden Konto eingezogen:
 
 \begin{tabularx}{\dimexpr\textwidth-\parindent\relax}{|rX|}
 \hline
-IBAN: & (((contract.bankaccount.iban)))\\
-BIC: & (((contract.bankaccount.bic))) (%
-(((contract.bankaccount.bank)))% 
+IBAN: & (((contract.bankaccount.iban|escape_tex)))\\
+BIC: & (((contract.bankaccount.bic|escape_tex))) (%
+(((contract.bankaccount.bank|escape_tex)))% 
 )\\
-Mandatsreferenz: & (((contract.refid)))\\\hline
+Mandatsreferenz: & (((contract.refid|escape_tex)))\\\hline
 \end{tabularx}
 Sollten diese Angaben nicht aktuell oder korrekt sein, bitten wir Sie umgehend um Benachrichtigung. Ihre IBAN und den BIC finden Sie z. B. auch auf Ihrem Kontoauszug. Sofern Sie Fragen zu diesem Schreiben haben, kontaktieren Sie uns gerne.
 ((* endblock content *))
