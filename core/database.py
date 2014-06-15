@@ -18,7 +18,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from core.errors import InvoiceError
 from core.lib import iban
 
-class DatabaseObject:
+class DatabaseObject( object ):
     def _to_dict( self ):
         d = {}
         for c in self.__table__.columns:

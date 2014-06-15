@@ -58,7 +58,7 @@ class ExceptionDialog( Gtk.Dialog ):
         box = self.get_content_area()
         size = box.get_preferred_size()[0]
         cur_width = self.get_size()[0]
-        self.resize( cur_width, size.height );
+        self.resize( cur_width, size.height )
 
 class Hook:
     """

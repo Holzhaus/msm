@@ -33,7 +33,6 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals
-        # FIXME I'd like to use self.builder.connect_signals( self ), but unless this method returns the handler_ids for the connected signals, I have to connect them manually
         self.builder.connect_signals( self )
 
         # Add child widgets
@@ -102,7 +101,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self.end_edit()
         self.start_edit( customer_id )
     def save( self ):
-        # TODO Do some multithreading here
+        # TODO: Maybe do some multithreading here?
         is_new = True if self._customer in self._session.new else False
         self._session.commit()
         self.emit( "save", self._customer.id, is_new )

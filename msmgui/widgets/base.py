@@ -3,6 +3,8 @@
 import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk
+import sqlalchemy.orm.scoping
+import core.database
 class RefreshableWindow( Gtk.Overlay ):
     def __init__( self, refreshable_objects ):
         Gtk.Overlay.__init__( self )
@@ -37,8 +39,6 @@ class RefreshableWindow( Gtk.Overlay ):
             self._loadingspinner.stop()
             self._loadingspinner.hide()
 
-import sqlalchemy.orm.scoping
-import core.database
 class ScopedDatabaseObject( object ):
     @property
     def session( self ):
@@ -54,7 +54,6 @@ class ScopedDatabaseObject( object ):
             raise RuntimeError( "Can't __init__ without a session!" )
         self._session = session
 
-from gi.repository import Gtk
 class ConfirmationDialog( Gtk.MessageDialog ):
     def __init__( self, parent_window, message ):
         super().__init__( parent_window, Gtk.DialogFlags.MODAL, Gtk.MessageType.WARNING, Gtk.ButtonsType.YES_NO, "Bist du sicher?" )

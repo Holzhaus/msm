@@ -73,7 +73,7 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
                 self.gui_objects = gui_objects
                 self.invoices = []
             def run( self ):
-                GLib.idle_add( lambda: self._gui_start() )
+                GLib.idle_add( self._gui_start )
                 local_session = core.database.Database.get_scoped_session()
                 i = 1
                 num_contracts = len( self.contracts )
@@ -87,10 +87,10 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
                     if invoice is not None:
                         self.invoices.append( invoice )
                     i += 1
-                    GLib.idle_add( lambda: self._gui_update( i, num_contracts ) )
+                    GLib.idle_add( self._gui_update, i, num_contracts )
                 local_session.expunge_all() # expunge everything afterwards
                 local_session.remove()
-                GLib.idle_add( lambda: self._gui_stop( len( self.invoices ), num_contracts ) )
+                GLib.idle_add( self._gui_stop, len( self.invoices ), num_contracts )
             def _gui_start( self ):
                 invoicingassistant, spinner, label, assistant, page, invoicetable = self.gui_objects
                 label.set_text( "Generiere Rechnungen..." )
