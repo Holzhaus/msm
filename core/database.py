@@ -28,7 +28,7 @@ import pytz
 import sqlalchemy
 from sqlalchemy import create_engine, func
 from sqlalchemy import Table, Column, Integer, Float, Boolean, String, Date, ForeignKey
-from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session
+from sqlalchemy.orm import backref, relationship, sessionmaker, scoped_session, Query
 from sqlalchemy.orm.session import object_session
 from sqlalchemy.ext.declarative import declarative_base
 from core.errors import InvoiceError
@@ -76,7 +76,7 @@ class DatabaseObject( object ):
     def get_all( cls, session=None ):
         logger.debug( 'get_all called for %r', cls )
         session = cls._mksession( session )
-        result = list( session.query( cls ).order_by( cls.id ) )
+        result = session.query( cls ).order_by( cls.id )
         return result
     @property
     def session( self ):
@@ -344,6 +344,16 @@ class Magazine( Base ):
             result.append( issue )
         result = result[:limit] if limit is not None else result
         return result
+    def get_contracts( self, date=None, session=None ):
+        if date is not None:
+            q = Contract.get_running_contracts_by_date( date=date, session=session )
+        else:
+            q = Contract.get_all( session=session )
+        if isinstance( q, Query ):
+            return q.filter( Contract.subscription.has( magazine_id=self.id ) )
+        else:
+            logger.debug( "%r is not a Query (Possible cause: No matching contract for given criterion)", q )
+            return []
 class Subscription( Base ):
     __tablename__ = 'subscriptions'
     id = Column( Integer, primary_key=True )
@@ -382,6 +392,10 @@ class Issue( Base ):
         if not self.magazine or not self.year or not self.number or not self.date:
             return False
         return True
+    def get_contracts( self, session=None ):
+        if not self.date:
+            raise ValueError( 'Need to set a date!' )
+        return self.magazine.get_contracts( date=self.date, session=session )
 class Bankaccount( Base ):
     __tablename__ = 'bankaccounts'
     id = Column( Integer, primary_key=True )
@@ -464,6 +478,16 @@ class Contract( Base ):
         self.billingaddress = billingaddress
         self.bankaccount = bankaccount
         self.refid = Contract.generate_refid()
+    @staticmethod
+    def get_running_contracts_by_date( date=datetime.date.today(), session=None ):
+        if session is None:
+            session = Session
+        else:
+            if not isinstance( session, type( Session ) ):
+                raise TypeError( "Expected {}, not {}".format( type( Session ).__name__ , type( session ).__name__ ) )
+
+        q = session().query( Contract ).filter( Contract.startdate <= date, ( ( Contract.enddate > date ) | ( Contract.enddate == None ) ) )
+        return q if q else []
     @staticmethod
     def get_by_refid( contract_refid, session=None ):
         if session is None:
