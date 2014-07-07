@@ -198,6 +198,71 @@ class LetterRenderer( AbstractRenderer ):
         queue.put_multiple( letters )
         super().__init__( queue, template_env )
         self._output_file = output_file
+class LetterCollectionRenderer( threading.Thread, ScopedDatabaseObject ):
+    class SubLetterRenderer( LetterRenderer ):
+        def __init__( self, parent, letters, output_file, template_env=None ):
+            super().__init__( letters, output_file, template_env )
+            self._parent = parent
+        def on_start( self, work_left ):
+            self._parent.on_rendering_start( self.work_started )
+            super().on_start( work_left )
+        def on_output( self, work_left, output ):
+            self._parent.on_rendering_output( self.work_done, self.work_started )
+            super().on_output( work_left, output )
+        def on_finished( self, output_list ):
+            self._parent.on_rendering_finished( self.work_done )
+            self._parent.on_compilation_start( self.work_done )
+            super().on_finished( output_list )
+            self._parent.on_compilation_finished( self.work_done )
+    def __init__( self, lettercollection, output_file, template_env=None ):
+        threading.Thread.__init__( self )
+        ScopedDatabaseObject.__init__( self )
+        self._lettercollection = lettercollection
+        self._output_file = output_file
+        self._template_env = template_env
+        self._letterrenderer = None
+    def run( self ):
+        self.on_init_start()
+        lettercollection = self.session.merge( self._lettercollection )
+        letters = []
+        for letter in lettercollection.letters:
+            self.session.expunge( letter )
+            letters.append( letter )
+        num_letters = len( letters )
+        self.session.close()
+        self._letterrenderer = self.__class__.SubLetterRenderer( self, letters, self._output_file )
+        self.on_init_finished( num_letters )
+        self._letterrenderer.start()
+        self._letterrenderer.join()
+    def on_init_start( self, num_letters_to_save ):
+        """
+        Called when saving starts
+        """
+        pass
+    def on_init_finished( self, num_letters_saved ):
+        """
+        Called when saving has finished
+        """
+        pass
+    def on_rendering_start( self, work_started ):
+        """
+        Called when rendering start
+        """
+    def on_rendering_output( self, work_done, work_started ):
+        """
+        Called when rendering produces output
+        """
+        pass
+    def on_rendering_finished( self, work_done ):
+        """
+        Called when rendering has finished
+        """
+        pass
+    def on_compilation_finished( self, work_done ):
+        """
+        Called when rendering has finished
+        """
+        pass
 class ComposingRenderer( threading.Thread, ScopedDatabaseObject ):
     class SubComposer( Composer ):
         def __init__( self, parent, lettercomposition, contracts ):
@@ -228,11 +293,12 @@ class ComposingRenderer( threading.Thread, ScopedDatabaseObject ):
             self._parent.on_compilation_start( self.work_done )
             super().on_finished( output_list )
             self._parent.on_compilation_finished( self.work_done )
-    def __init__( self, lettercomposition, contracts, output_file, template_env=None ):
+    def __init__( self, lettercomposition, contracts, output_file, collectionname, template_env=None ):
         threading.Thread.__init__( self )
         ScopedDatabaseObject.__init__( self )
         self._lettercomposition = lettercomposition
         self._contracts = contracts
+        self._collectionname = collectionname
         self._output_file = output_file
         self._template_env = template_env
         self._composer = self.__class__.SubComposer( self, self._lettercomposition, self._contracts )
@@ -245,7 +311,7 @@ class ComposingRenderer( threading.Thread, ScopedDatabaseObject ):
         self.on_saving_start( num_letters )
         merged_letters = []
         lettercomposition = self._lettercomposition.merge( self._session )
-        lettercollection = core.database.LetterCollection( description=lettercomposition.get_description() )
+        lettercollection = core.database.LetterCollection( name=self._collectionname, description=lettercomposition.get_description() )
         self._session.add( lettercollection )
         for unmerged_letter in letters:
             merged_letter = self.session.merge( unmerged_letter )

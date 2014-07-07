@@ -26,7 +26,6 @@ class GenericExportAssistant( GObject.GObject, ScopedDatabaseObject ):
         Enumeration of LetterExportAssistants pages.
         """
         Intro, Settings, Confirm, Progress, Summary = range( 5 )
-    __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
     @property
     def begin_label( self ):
         return self.builder.get_object( 'begin_label' ).get_label()

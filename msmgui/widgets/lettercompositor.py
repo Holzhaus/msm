@@ -20,7 +20,7 @@ import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, Gdk, GObject, GdkPixbuf
 from core.database import Note
-from core.lettercomposition import InvoicePlaceholder, Criterion
+from core.lettercomposition import LetterComposition, InvoicePlaceholder, Criterion
 import msmgui.rowreference
 TARGET_ENTRY_PYOBJECT = 0
 COLUMN_PYOBJECT, COLUMN_TEXT, COLUMN_PIXBUF = range( 3 )
@@ -114,9 +114,9 @@ class DropArea( Gtk.Box ):
         for criterion in criterions:
             self.builder.get_object( "criterion_liststore" ).append( [ "", criterion ] )
     def get_composition( self ):
-        composition = []
+        composition = LetterComposition()
         for row in self.builder.get_object( "lettercomposition_liststore" ):
-            composition.append( ( row[0], row[1] ) )
+            composition.append( row[0], row[1] )
         return composition
     def lettercomposition_treeview_key_press_event_cb( self, treeview, event ):
         keyname = Gdk.keyval_name( event.keyval )

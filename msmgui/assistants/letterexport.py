@@ -17,39 +17,20 @@
     along with MSM.  If not, see <http://www.gnu.org/licenses/>.
 """
 import logging
+from core.database import LetterCollection
 logger = logging.getLogger( __name__ )
+import locale
 from gi.repository import Gtk, GObject, GLib
 import sqlalchemy.orm.session
 import core.database
-from core.letterrenderer import ComposingRenderer
+from core.letterrenderer import ComposingRenderer, LetterCollectionRenderer
 from core.lettercomposition import ContractLetterComposition
 import msmgui.widgets.lettercompositor
-from msmgui.widgets.base import ScopedDatabaseObject
-class LetterExporter( ComposingRenderer ):
-    def __init__( self, lettercomposition, contracts, gui_objects, update_step=25 ):
-        output_file = '/tmp/export.pdf'
-        super().__init__( lettercomposition, contracts, output_file )
+from msmgui.assistants.genericexport import GenericExportAssistant, GenericExportSettings
+class BaseRendererGUI( object ):
+    def __init__( self, gui_objects, update_step ):
         self._gui_spinner, self._gui_label, self._gui_assistant, self._gui_page = gui_objects
         self._update_step = update_step
-    def on_composing_start( self, work_started ):
-        text = "Starte Zusammenstellung..."
-        GLib.idle_add( self._gui_start )
-        GLib.idle_add( self._gui_update, text )
-    def on_composing_output( self, work_done, work_started ):
-        if self._update_step is not None:
-            if not ( work_done % self._update_step == 0 or work_done == 1 ):
-                return
-        text = "Stelle Briefe für Verträge zusammen... ({}/{})".format( work_done, work_started )
-        GLib.idle_add( self._gui_update, text )
-    def on_composing_finished( self, num_letters ):
-        text = "1 Brief zusammengestellt!" if num_letters == 1 else "{} Briefe zusammengestellt!".format( num_letters )
-        GLib.idle_add( self._gui_update, text )
-    def on_saving_start( self, num_letters ):
-        text = "Speichere 1 Brief in der Datenbank..." if num_letters == 1 else "Speichere {} Briefe in der Datenbank...".format( num_letters )
-        GLib.idle_add( self._gui_update, text )
-    def on_saving_stop( self, num_letters ):
-        text = "1 Brief in der Datenbank gespeichert!" if num_letters == 1 else "{} Briefe in der Datenbank gespeichert!".format( num_letters )
-        GLib.idle_add( self._gui_update, text )
     def on_rendering_start( self, work_started ):
         text = "Starte Rendering..."
         GLib.idle_add( self._gui_start )
@@ -77,134 +58,157 @@ class LetterExporter( ComposingRenderer ):
     def _gui_stop( self ):
         self._gui_spinner.stop()
         self._gui_assistant.set_page_complete( self._gui_page, True )
-class LetterExportAssistant( GObject.GObject, ScopedDatabaseObject ):
-    class Page:
-        """
-        Enumeration of LetterExportAssistants pages.
-        """
-        Intro, Compose, Confirm, Render, Summary = range( 5 )
+class ComposingRendererGUI( BaseRendererGUI, ComposingRenderer ):
+    def __init__( self, lettercomposition, contracts, collectionname, output_file, gui_objects, update_step=25 ):
+        BaseRendererGUI.__init__( self, gui_objects, update_step )
+        ComposingRenderer.__init__( self, lettercomposition, contracts, collectionname, output_file )
+    def on_composing_start( self, work_started ):
+        text = "Starte Zusammenstellung..."
+        GLib.idle_add( self._gui_start )
+        GLib.idle_add( self._gui_update, text )
+    def on_composing_output( self, work_done, work_started ):
+        if self._update_step is not None:
+            if not ( work_done % self._update_step == 0 or work_done == 1 ):
+                return
+        text = "Stelle Briefe für Verträge zusammen... ({}/{})".format( work_done, work_started )
+        GLib.idle_add( self._gui_update, text )
+    def on_composing_finished( self, num_letters ):
+        text = "1 Brief zusammengestellt!" if num_letters == 1 else "{} Briefe zusammengestellt!".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+    def on_saving_start( self, num_letters ):
+        text = "Speichere 1 Brief in der Datenbank..." if num_letters == 1 else "Speichere {} Briefe in der Datenbank...".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+    def on_saving_stop( self, num_letters ):
+        text = "1 Brief in der Datenbank gespeichert!" if num_letters == 1 else "{} Briefe in der Datenbank gespeichert!".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+class LetterCollectionRendererGUI( BaseRendererGUI, LetterCollectionRenderer ):
+    def __init__( self, lettercollection, output_file, gui_objects, update_step=25 ):
+        BaseRendererGUI.__init__( self, gui_objects, update_step )
+        LetterCollectionRenderer.__init__( self, lettercollection, output_file )
+    def on_init_start( self ):
+        text = "Hole Briefe aus der Datenbank..."
+        GLib.idle_add( self._gui_start )
+        GLib.idle_add( self._gui_update, text )
+    def on_init_finished( self, num_letters ):
+        text = "1 Brief aus Datenbank geholt." if num_letters == 1 else "{} Briefe aus Datenbank geholt.".format( num_letters )
+        GLib.idle_add( self._gui_update, text )
+class LetterExportAssistant( GenericExportAssistant ):
     __gsignals__ = { 'saved': ( GObject.SIGNAL_RUN_FIRST, None, ( int, ) ) }
     def __init__( self ):
-        ScopedDatabaseObject.__init__( self )
-        GObject.GObject.__init__( self )
-        # Build GUI
-        self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/assistants/letterexport.glade" )
-        self._assistant = self.builder.get_object( "content" )
-        self._assistant.set_modal( True )
-
-        self._lettercompositor = msmgui.widgets.lettercompositor.LetterCompositor()
-        self.builder.get_object( "lettercompositorbox" ).pack_start( self._lettercompositor, True, True, 0 )
-        self._lettercompositor.connect( "changed", self.lettercompositor_changed_cb )
-        self._assistant.set_forward_page_func( self.page_forward_func )
-        # Connect Signals
-        self.builder.connect_signals( self )
-    def set_parent( self, parent ):
-        """
-        Sets the assistants parent window. Internally calls Gtk.Assistant.set_transient_for(parent).
-        Arguments:
-            parent:
-                the assistant's parent window
-        """
-        self._assistant.set_transient_for( parent )
-    def show( self ):
-        """
-        Shows the LetterExportAssistant.
-        """
-        self.builder.get_object( "content" ).show_all()
-    def page_forward_func( self, page ):
-        """
-        Function called when the forward button is pressed.
-        Arguments:
-            page:
-                integer index of the current page
-        returns:
-            integer index of the next page to display
-        """
-        return page + 1
-    # Page prepare funcs
-    def page_render_prepare_func( self, assistant, page ):
+        filter_pdf = Gtk.FileFilter()
+        filter_pdf.set_name( "PDF-Dateien" )
+        filter_pdf.add_pattern( "*.pdf" )
+        super().__init__( filefilters=[filter_pdf] )
+        widget = LetterExportSettings( session=self.session )
+        self.set_settingswidget( widget )
+        # Customize labels
+        self.begin_label = "Willkommen beim Rechnungs-Assistenten."
+        self.confirm_label = "Der Exportvorgang kann nun gestartet werden."
+        self.summary_label = "Die Rechnungen wurden erfolgreich als PDF exportiert."
+    def confirm( self, settingswidget, output_file ):
+        lettercollection, new_name, new_composition = settingswidget.get_settings()
+        if lettercollection is not None:
+            self.confirm_label = "Die Briefsammlung <b>„{}“</b> vom <b>{}</b> wird erneut als PDF gerendert.\nDie Sammlung enthält:\n{}".format( lettercollection.name if lettercollection.name else "Unbenannt", lettercollection.creation_date.strftime( locale.nl_langinfo( locale.D_FMT ) ), lettercollection.description )
+        elif new_name is not None and new_composition is not None:
+            self.confirm_label = "Es wird eine <b>neue Briefsammlung</b> mit der Bezeichnung <b>„{}“</b> angelegt und im Anschluss als PDF gerendert.\nDie Sammlung soll folgendes enthalten:\n{}".format( new_name, new_composition.get_description() )
+        else:
+            raise RuntimeError( "These settings look strange." )
+    def export( self, settingswidget, gui_objects, output_file ):
         """
         Starts the letter rendering thread.
         Arguments:
-            assistant:
-                the calling Gtk.Assistant
-            page:
-                current page of the assistant
+            settingswidget:
+                the widget that stores export settings
+            gui_objects:
+                a tuple containing spinner, label, assistant, page (in that order)
+            output_file:
+                a string pointing to the output file
         """
-        # Collect GUI objects to be using during rendering
-        assistant.set_page_complete( page, False )
-        spinner = self.builder.get_object( "render_spinner" )
-        label = self.builder.get_object( "render_label" )
-        gui_objects = ( spinner, label, assistant, page )
+        lettercollection, new_name, new_composition = settingswidget.get_settings()
+        if lettercollection is not None:
+            watcher = LetterCollectionRendererGUI( lettercollection, output_file, gui_objects )
+        elif new_name is not None and new_composition is not None:
+            contracts = core.database.Contract.get_all( session=self._session ) # We expunge everything, use it inside the thread and readd it later
+            lettercomposition = ContractLetterComposition()
+            for letterpart, criterion in new_composition:
+                if isinstance( letterpart, core.database.Note ):
+                    object_session = sqlalchemy.orm.session.object_session( letterpart )
+                    if object_session:
+                        object_session.expunge( letterpart )
+                lettercomposition.append( letterpart, criterion )
+                # Create Thread
+                watcher = ComposingRendererGUI( lettercomposition, contracts, new_name, output_file, gui_objects )
+        else:
+             raise RuntimeError( "These settings look strange." )
         # Remove stuff from the session so that it can be re-added in the thread
         self._session.close()
-        contracts = core.database.Contract.get_all( session=self._session ) # We expunge everything, use it inside the thread and readd it later
-        self._session.expunge_all()
-        lettercomposition = ContractLetterComposition()
-        for letterpart, criterion in self._lettercompositor.get_composition():
-            if isinstance( letterpart, core.database.Note ):
-                object_session = sqlalchemy.orm.session.object_session( letterpart )
-                if object_session:
-                    object_session.expunge( letterpart )
-            lettercomposition.append( letterpart, criterion )
         # Start the Thread
-        watcher = LetterExporter( lettercomposition, contracts, gui_objects )
         watcher.start()
-    # Callbacks
-    def lettercompositor_changed_cb( self, lettercompositor, has_contents ):
-        """
-        Callback function for the LetterCompositor "changed" signal.
-        Arguments:
-            lettercompositor:
-                the LetterCompositor widget that emitted the signal
-            has_contents:
-                True if the lettercomposition contains items, else False
-        """
-        page = self._assistant.get_nth_page( LetterExportAssistant.Page.Compose )
-        self._assistant.set_page_complete( page, has_contents )
-    def hide_cb( self, assistant ):
-        """
-        Callback for the "hide"-signal of the Gtk.Assistant.
-        Rolls back and closes the database session.
-        Arguments:
-            assistant:
-                the Gtk.Assistant that emitted the signal
-        """
-        self._session.rollback()
-        self._session.close()
-    def close_cb( self, assistant ):
-        """
-        Callback for the "close"-signal of the Gtk.Assistant.
-        Hides the assistant.
-        Arguments:
-            assistant:
-                the Gtk.Assistant that emitted the signal
-        """
-        assistant.hide()
-    def cancel_cb( self, assistant ):
-        """
-        Callback for the "cancel"-signal of the Gtk.Assistant.
-        Hides the assistant.
-        Arguments:
-            assistant:
-                the Gtk.Assistant that emitted the signal
-        """
-        assistant.hide()
-    def apply_cb( self, assistant ):
-        # FIXME: What to do here?
-        pass
-    def prepare_cb( self, assistant, page ):
-        """
-        Callback for the "prepare"-signal of the Gtk.Assistant.
-        Calls the prepare_func for the respective page, if neccessary.
-        Arguments:
-            assistant:
-                the Gtk.Assistant that emitted the signal
-            page:
-                the assistant's page to be prepared
-        """
-        if page == assistant.get_nth_page( LetterExportAssistant.Page.Intro ):
-            assistant.set_page_complete( page, True )
-        elif page == assistant.get_nth_page( LetterExportAssistant.Page.Render ):
-            self.page_render_prepare_func( assistant, page )
+class LetterExportSettings( GenericExportSettings ):
+    def __init__( self, session=None ):
+        super().__init__( session=session )
+        # Build GUI
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file( "data/ui/widgets/letterexportsettings.glade" )
+        self.builder.get_object( "content" ).reparent( self )
+        self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
+        self.builder.connect_signals( self )
+        self._lettercompositor = msmgui.widgets.lettercompositor.LetterCompositor()
+        self.builder.get_object( "lettercompositorbox" ).add( self._lettercompositor )
+        self.builder.get_object( "lettercompositorbox" ).set_child_packing( self._lettercompositor, True, True, 0, Gtk.PackType.START )
+    def get_settings( self ):
+        if self.builder.get_object( "new_radiobutton" ).get_active():
+            name = self.builder.get_object( "name_entry" ).get_text().strip()
+            if name:
+                print( name )
+                lettercomposition = self._lettercompositor.get_composition()
+                print( len( lettercomposition ) )
+                if len( lettercomposition ) > 0:
+                    return ( None, name, lettercomposition )
+        elif self.builder.get_object( "rerender_radiobutton" ).get_active():
+            lettercollection = self.get_lettercollection()
+            if lettercollection is not None:
+                return ( lettercollection, None, None )
+        return None
+    def get_lettercollection( self ):
+        combo = self.builder.get_object( "lettercollection_combobox" )
+        model = combo.get_model()
+        treeiter = combo.get_active_iter()
+        if model is not None and treeiter is not None:
+            lettercollection = model[treeiter][0]
+            if isinstance( lettercollection, core.database.LetterCollection ):
+                return lettercollection
+        return None
+    def lettercompositor_changed_cb( self, lettercompositor, has_content ):
+        self.emit( "changed", True if self.get_settings() is not None else False )
+    def radiobutton_toggled_cb( self, radiobutton ):
+        notebook = self.builder.get_object( "settings_notebook" )
+        if self.builder.get_object( "new_radiobutton" ).get_active():
+            if notebook.get_current_page() != 0:
+                notebook.set_current_page( 0 )
+        else:
+            if notebook.get_current_page() != 1:
+                notebook.set_current_page( 1 )
+        self.emit( "changed", True if self.get_settings() is not None else False )
+    def name_entry_changed_cb( self, entry ):
+        self.emit( "changed", True if self.get_settings() is not None else False )
+    def lettercollection_combobox_changed_cb( self, combo ):
+        label = self.builder.get_object( "lettercollection_label" )
+        lettercollection = self.get_lettercollection()
+        if lettercollection is not None:
+            label.set_text( lettercollection.description )
+        else:
+            label.set_text( "Bitte Briefsammlung auswählen." )
+        self.emit( "changed", True if self.get_settings() is not None else False )
+    def refresh( self ):
+        selected_lettercollection = self.get_lettercollection()
+        model = self.builder.get_object( "lettercollection_liststore" )
+        model.clear()
+        for lettercollection in LetterCollection.get_all( session=self.session ):
+            text_name = lettercollection.name if lettercollection.name else "Unbenannt"
+            text_date = lettercollection.creation_date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+            treeiter = model.append( [lettercollection, "{} ({})".format( text_name, text_date )] )
+            if selected_lettercollection is not None and lettercollection.id == selected_lettercollection.id:
+                self.builder.get_object( "lettercollection_combobox" ).set_active_iter( treeiter )
+        if not self.get_lettercollection() and len( model ) > 0:
+            self.builder.get_object( "lettercollection_combobox" ).set_active( 0 )
