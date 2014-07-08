@@ -116,7 +116,7 @@ class AbstractBankInfoStore( TaggedInfoStore ):
         if countrycode in self.__class__.BANKCODE_FMT:
             bankcode_length = self.__class__.BANKCODE_FMT[countrycode]['length']
             bankcode = iban[4:( 4 + bankcode_length )]
-        return self.get( countrycode, "bankcode", bankcode )
+            return self.get( countrycode, "bankcode", bankcode )
     def get_by_bic( self, value ):
         for tag in self._data.keys():
             obj = self.get( tag, 'bic', value )
@@ -139,7 +139,7 @@ class BankInfoStore( AbstractBankInfoStore ):
                         5, # PLZ
                        35, # Ort
                        27, # Kurzbezeichnung
-                        4, # PAN
+                        5, # Institutsnummer für PAN
                        11, # BIC
                         2, # Prüfzifferberechnungsmethode
                         6, # Datensatznummer
