@@ -23,7 +23,7 @@ import datetime
 import dateutil.parser
 from gi.repository import Gtk, GLib
 from core.database import Magazine, Issue
-from core.lib.addressexport import AddressExporterCSV
+from core.addressexport import AddressExporterCSV
 from msmgui.assistants.genericexport import GenericExportAssistant, GenericExportSettings
 class AddressExporter( AddressExporterCSV ):
     def __init__( self, output_file, magazine, issue, date, gui_objects, update_step=25 ):
