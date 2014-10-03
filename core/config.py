@@ -23,6 +23,7 @@ import platform
 import os
 import shutil
 import string
+from core import paths
 
 CONFIG_DIRNAME = "msm"
 CONFIG_FILENAME = "msm.cfg"
@@ -39,14 +40,10 @@ class Configuration( object ):
         self.cp.read_file( open( self.config_filename, encoding='utf8' ) )
     @property
     def config_path( self ):
-        if platform.system() == 'Windows':
-            config_path = os.path.join( os.environ['APPDATA'], CONFIG_DIRNAME )
-        else:
-            config_path = os.path.expanduser( '~/.%s' % CONFIG_DIRNAME )
-        if not os.path.exists( config_path ):
-            logger.info( "config dir '%s' does not exist, creating...", config_path )
-            os.mkdir( config_path, mode=0o700 )
-        return os.path.abspath( config_path )
+        if not os.path.exists( paths.CONFIG_PATH ):
+            logger.info( "config dir '%s' does not exist, creating...", paths.CONFIG_PATH )
+            os.mkdir( paths.CONFIG_PATH, mode=0o700 )
+        return os.path.abspath( paths.CONFIG_PATH )
     @property
     def config_filename( self ):
         return os.path.join( self.config_path, CONFIG_FILENAME )
