@@ -34,8 +34,8 @@
       <attribute name="label">Export</attribute>
       <section>
         <item>
-          <attribute name ="label">Versandadressen exportieren</attribute>
-          <attribute name="action">win.addressexport</attribute>
+          <attribute name ="label">Vertragsdaten exportieren</attribute>
+          <attribute name="action">win.contractexport</attribute>
         </item>
       </section>
     </submenu>

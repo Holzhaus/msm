@@ -3,7 +3,7 @@ import pytz
 import core.plugintypes
 
 
-class AddressExportFormatterCSV(core.plugintypes.AddressExportFormatter):
+class AddressExportFormatterCSV(core.plugintypes.ContractExportFormatter):
     FILE_EXT = 'csv'
 
     def write(self, contracts, output_file):
@@ -13,8 +13,7 @@ class AddressExportFormatterCSV(core.plugintypes.AddressExportFormatter):
             csvwriter = csv.writer(f, delimiter=';', quotechar='"',
                                    quoting=csv.QUOTE_ALL)
             csvwriter.writerow(fieldnames)
-            num_contracts = len(contracts)
-            for i, contract in enumerate(contracts, start=1):
+            for contract in contracts:
                 address = contract.shippingaddress
                 recipient = (address.recipient if address.recipient
                              else address.customer.name)
@@ -24,4 +23,4 @@ class AddressExportFormatterCSV(core.plugintypes.AddressExportFormatter):
                        address.zipcode, address.countrycode, countryname,
                        contract.refid]
                 csvwriter.writerow(row)
-                yield (i, num_contracts)
+                yield

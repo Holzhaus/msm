@@ -132,8 +132,8 @@ class MSMPluginManager(PluginManager):
     PLUGIN_DIRS = [os.path.join(os.path.dirname(__file__),
                                 os.pardir,
                                 "plugins")]
-    PLUGIN_CATS = {plugintypes.AddressExportFormatter.CATEGORY:
-                   plugintypes.AddressExportFormatter}
+    PLUGIN_CATS = {plugintypes.ContractExportFormatter.CATEGORY:
+                   plugintypes.ContractExportFormatter}
 
     def __init__(self):
         super(MSMPluginManager, self).__init__(

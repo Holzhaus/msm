@@ -25,7 +25,7 @@ import dateutil.parser
 from gi.repository import Gtk, GLib
 from core.pluginmanager import PluginManagerSingleton as pluginmanager, plugintypes
 from core.database import Magazine, Issue
-from core.addressexport import AddressExporter
+from core.contractexport import ContractExporter
 from msmgui.assistants.genericexport import GenericExportAssistant, GenericExportSettings
 
 
@@ -69,32 +69,32 @@ class FileFormatPluginWrapper(Gtk.FileFilter):
         self.add_pattern(pattern)
 
 
-class AddressExportAssistant(GenericExportAssistant):
+class ContractExportAssistant(GenericExportAssistant):
     def __init__(self):
         plugins = pluginmanager.getPluginsOfCategory(
-            plugintypes.AddressExportFormatter.CATEGORY)
+            plugintypes.ContractExportFormatter.CATEGORY)
         filefilters = [FileFormatPluginWrapper(plugin) for plugin in plugins]
 
         super().__init__(filefilters=filefilters)
-        widget = AddressExportSettings( session=self.session )
+        widget = ContractExportSettings( session=self.session )
         self.set_settingswidget( widget )
         # Customize labels
-        self.begin_label = "Willkommen beim Adressexport-Assistenten."
+        self.begin_label = "Willkommen beim vertragsbasierten Export-Assistenten."
         self.confirm_label = "Der Exportvorgang kann nun gestartet werden."
-        self.summary_label = "Die Adressen wurden erfolgreich exportiert."
+        self.summary_label = "Die Datensätze wurden erfolgreich exportiert."
 
     def confirm( self, settingswidget, output_file ):
         magazine, issue, date = settingswidget.get_settings()
         self.confirm_label = ""
         if issue is not None:
-            self.confirm_label = "Es werden die <b>Versandadressen</b> der Empfänger der <b>Ausgabe {}-{}</b> (vom {}) der Zeitschrift <b>{}</b> exportiert.".format( issue.year, issue.number, issue.date.strftime( locale.nl_langinfo( locale.D_FMT ) ), issue.magazine.name )
+            self.confirm_label = "Es werden Vertragsdaten der Kunden, die <b>Ausgabe {}-{}</b> (vom {}) der Zeitschrift <b>{}</b> erhalten haben exportiert.".format( issue.year, issue.number, issue.date.strftime( locale.nl_langinfo( locale.D_FMT ) ), issue.magazine.name )
         elif magazine is not None:
-            self.confirm_label = "Es werden die <b>Versandadressen</b> der Kunden, die am <b>{}</b> die Zeitschrift <b>{}</b> abonniert haben oder hatten, exportiert.".format( date.strftime( locale.nl_langinfo( locale.D_FMT ) ), magazine.name )
+            self.confirm_label = "Es werden Vertragsdaten der Kunden, die am <b>{}</b> die Zeitschrift <b>{}</b> abonniert haben oder hatten, exportiert.".format( date.strftime( locale.nl_langinfo( locale.D_FMT ) ), magazine.name )
         else:
             if date is not None:
-                self.confirm_label = "Es werden die <b>Versandadressen</b> der Kunden, die am <b>{}</b> eine Zeitschrift abonniert haben oder hatten, exportiert.".format( date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+                self.confirm_label = "Es werden Vertragsdaten der Kunden, die am <b>{}</b> eine Zeitschrift abonniert haben oder hatten, exportiert.".format( date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
             else:
-                self.confirm_label = "Es werden die <b>Versandadressen aller Kunden</b> exportiert."
+                self.confirm_label = "Es werden Vertragsdaten aller Kunden exportiert."
         if not self.confirm_label:
             raise RuntimeError( "These settings look strange." )
 
@@ -116,15 +116,15 @@ class AddressExportAssistant(GenericExportAssistant):
         self._session.close()
         # Start the Thread
         formatter = self.output_filter.plugin_info.plugin_object
-        exporter = AddressExporter(output_file, formatter, magazine, issue, date)
+        exporter = ContractExporter(output_file, formatter, magazine, issue, date)
         watcher = GuiExporter(exporter, gui_objects)
         watcher.start()
-class AddressExportSettings( GenericExportSettings ):
+class ContractExportSettings( GenericExportSettings ):
     def __init__( self, session=None ):
         super().__init__( session=session )
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/addressexportsettings.glade" )
+        self.builder.add_from_file( "data/ui/widgets/contractexportsettings.glade" )
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         self.builder.connect_signals( self )

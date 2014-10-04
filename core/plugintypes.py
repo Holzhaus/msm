@@ -18,8 +18,8 @@ class AbstractMSMPlugin(IPlugin):
         return True
 
 
-class AddressExportFormatter(AbstractMSMPlugin):
-    CATEGORY = "address-export-format"
+class ContractExportFormatter(AbstractMSMPlugin):
+    CATEGORY = "contract-export-format"
     FILE_EXT = "*"
 
     def __init__(self):

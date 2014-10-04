@@ -22,7 +22,7 @@ from gi.repository import Gtk, Gio, GLib
 import msmgui.widgets.customerwindow
 import msmgui.widgets.invoicewindow
 import msmgui.dialogs.about
-import msmgui.assistants.addressexport
+import msmgui.assistants.contractexport
 class MainWindow( Gtk.ApplicationWindow ):
     def __init__( self, application ):
         """
@@ -63,14 +63,16 @@ class MainWindow( Gtk.ApplicationWindow ):
         self._invoicewindow.connect( "status-changed", self.statusbar_cb )
 
         self._aboutdialog = msmgui.dialogs.about.AboutDialog( self )
-        self._addressexportassistant = msmgui.assistants.addressexport.AddressExportAssistant()
+        self._contractexportassistant = msmgui.assistants.contractexport.ContractExportAssistant()
+
         # MenuBar Actions
-        addressexport_action = Gio.SimpleAction.new( "addressexport", None )
-        addressexport_action.connect( "activate", self.addressexport_cb )
-        self.add_action( addressexport_action )
-        about_action = Gio.SimpleAction.new( "about", None )
-        about_action.connect( "activate", self.about_cb )
-        self.add_action( about_action )
+        contractexport_action = Gio.SimpleAction.new("contractexport", None)
+        contractexport_action.connect("activate", self.contractexport_cb)
+        self.add_action(contractexport_action)
+
+        about_action = Gio.SimpleAction.new("about", None)
+        about_action.connect("activate", self.about_cb)
+        self.add_action(about_action)
 
         notebook = self.builder.get_object( "notebook" )
         page = self.builder.get_object( "customerwindow" )
@@ -87,18 +89,19 @@ class MainWindow( Gtk.ApplicationWindow ):
         context_id = statusbar.get_context_id( message )
         statusbar.push( context_id, message )
         return context_id
+
     # Callbacks for MenuBar Actions
-    def addressexport_cb( self, action, parameter ):
+    def contractexport_cb(self, action, parameter):
         """
-        Callback for the "addressexport"-action of the MenuBar. Shows the AddressExport dialog.
+        Callback for the "contractexport"-action of the MenuBar. Shows the ContractExport dialog.
         Arguments:
             action:
                 the Gio.SimpleAction that emitted the "activate" signal
             parameter:
                 the parameter to the activation
         """
-        self._addressexportassistant.set_parent( self.get_toplevel() )
-        self._addressexportassistant.show()
+        self._contractexportassistant.set_parent( self.get_toplevel() )
+        self._contractexportassistant.show()
     def about_cb( self, action, parameter ):
         """
         Callback for the "about"-action of the MenuBar. Shows the about dialog.
