@@ -19,8 +19,6 @@
 import logging
 logger = logging.getLogger( __name__ )
 import threading
-import csv
-import pytz
 from core.database import Contract
 from msmgui.widgets.base import ScopedDatabaseObject
 
