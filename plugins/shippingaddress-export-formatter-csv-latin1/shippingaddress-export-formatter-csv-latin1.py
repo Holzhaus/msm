@@ -15,6 +15,8 @@ class AddressExportFormatterCSV(core.plugintypes.ContractExportFormatter):
             csvwriter.writerow(fieldnames)
             for contract in contracts:
                 address = contract.shippingaddress
+                if not address:
+                    continue
                 recipient = (address.recipient if address.recipient
                              else address.customer.name)
                 countryname = pytz.country_names[address.countrycode.lower()]
