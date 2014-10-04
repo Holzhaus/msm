@@ -43,16 +43,20 @@ def get_contracts( magazine=None, issue=None, date=None, session=None ):
         raise RuntimeError( "These settings look strange." )
     return contracts
 
-class AddressExporterGeneric( threading.Thread, ScopedDatabaseObject ):
-    def __init__( self, output_file, magazine, issue, date ):
+class AddressExporter( threading.Thread, ScopedDatabaseObject ):
+    def __init__( self, output_file, formatter, magazine, issue, date, encoding='utf-8', update_step=25 ):
+        self.logger = logging.getLogger(__name__)
         threading.Thread.__init__( self )
         ScopedDatabaseObject.__init__( self )
         self._output_file = output_file
+        self._formatter = formatter
         self._magazine = magazine
         self._issue = issue
         self._date = date
+        self._enc = encoding
+        self._update_step = update_step
     def run( self ):
-        self.on_init_start()
+        self.logger.info("Hole Adressen aus Datenbank...")
         # add settings to the local session
         magazine = self._session.merge( self._magazine ) if self._magazine is not None else None
         issue = self._session.merge( self._issue ) if self._issue is not None else None
@@ -62,64 +66,24 @@ class AddressExporterGeneric( threading.Thread, ScopedDatabaseObject ):
         for contract in unfiltered_contracts:
             address = contract.shippingaddress
             if not address:
-                logger.critical( 'Contract %s (%s) has no shippingaddress', contract.refid, contract.customer.name )
+                logger.warning( 'Contract %s (%s) has no shippingaddress', contract.refid, contract.customer.name )
             else:
                 contracts.append( contract )
-        self.on_init_finished( len( contracts ) )
+        num_contracts = len(contracts)
+        self.logger.info("1 Adresse geholt!" if num_contracts == 1 else "{} Adressen geholt!".format(num_contracts))
+        self.logger.info("Exportiere 1 Adresse..." if num_contracts == 1 else "Exportiere {} Adressen...".format(num_contracts))
 
-        self.on_export_start( len( contracts ) )
-        self.begin_write( self._output_file )
-        work_done = 0
-        for contract in contracts:
-            self.write( contract )
-            work_done += 1
-            self.on_export_output( work_done, len( contracts ) )
-        self.end_write( self._output_file )
+        for work_done, work_total in self._formatter.write(contracts,
+                                                           self._output_file,
+                                                           encoding=self._enc):
+            if (not self._update_step or
+               (work_done % self._update_step) == 0 or
+               work_done in (0, 1)):
+                self.logger.info("Exportiere %d von %s", work_done,
+                                  work_total)
+
         self._session.expunge_all()
         self._session.remove()
-        self.on_export_finished( work_done )
-    def begin_write( self, output_file ):
-        raise NotImplementedError
-    def write( self, address ):
-        raise NotImplementedError
-    def end_write( self, output_file ):
-        raise NotImplementedError
-    def on_init_start( self ):
-        """
-        Called when database query starts
-        """
-        pass
-    def on_init_finished( self, addresses_fetched ):
-        """
-        Called when database query finishes
-        """
-        pass
-    def on_export_start( self, work_started ):
-        """
-        Called when exporting starts
-        """
-        pass
-    def on_export_output( self, work_done, work_started ):
-        """
-        Called when exporting produces output
-        """
-        pass
-    def on_export_finished( self, work_done ):
-        """
-        Called when exporting finishes
-        """
-        pass
-class AddressExporterCSV( AddressExporterGeneric ):
-    def begin_write( self, output_file ):
-        fieldnames = ['RECIPIENT', 'CO', 'STREET', 'CITY', 'POSTALCODE', 'COUNTRYCODE', 'COUNTRYNAME', 'CONTRACTNUMBER']
-        self._csvfile = open( output_file, 'w', newline='' )
-        self._csvwriter = csv.writer( self._csvfile, delimiter=';', quotechar='"', quoting=csv.QUOTE_ALL )
-        self._csvwriter.writerow( fieldnames )
-    def write( self, contract ):
-        address = contract.shippingaddress
-        recipient = address.recipient if address.recipient else address.customer.name
-        countryname = pytz.country_names[address.countrycode.lower()]
-        row = [recipient, address.co, address.street, address.city, address.zipcode, address.countrycode, countryname, contract.refid] # FIXME: improvement needed
-        self._csvwriter.writerow( row )
-    def end_write( self, output_file ):
-        self._csvfile.close()
+        self.logger.info("Fertig! 1 Adresse exportiert." if work_done == 1
+                          else
+                          "Fertig! {} Adressen exportiert.".format(work_done))

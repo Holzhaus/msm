@@ -18,45 +18,47 @@
 """
 import logging
 logger = logging.getLogger( __name__ )
+import threading
 import locale
 import datetime
 import dateutil.parser
 from gi.repository import Gtk, GLib
+from core.pluginmanager import PluginManagerSingleton as pluginmanager, plugintypes
 from core.database import Magazine, Issue
-from core.addressexport import AddressExporterCSV
+from core.addressexport import AddressExporter
 from msmgui.assistants.genericexport import GenericExportAssistant, GenericExportSettings
-class AddressExporter( AddressExporterCSV ):
-    def __init__( self, output_file, magazine, issue, date, gui_objects, update_step=25 ):
-        super().__init__( output_file, magazine, issue, date )
-        self._gui_spinner, self._gui_label, self._gui_assistant, self._gui_page = gui_objects
-        self._update_step = update_step
-    def on_init_start( self ):
-        text = "Hole Adressen aus Datenbank..."
-        GLib.idle_add( self._gui_start )
-        GLib.idle_add( self._gui_update, text )
-    def on_init_finished( self, num_addresses ):
-        text = "1 Adresse geholt!" if num_addresses == 1 else "{} Adressen geholt!".format( num_addresses )
-        GLib.idle_add( self._gui_update, text )
-    def on_export_start( self, num_addresses ):
-        text = "Exportiere 1 Adresse..." if num_addresses == 1 else "Exportiere {} Adressen...".format( num_addresses )
-        GLib.idle_add( self._gui_update, text )
-    def on_export_output( self, work_done, work_started ):
-        if self._update_step is not None:
-            if not ( work_done % self._update_step == 0 or work_done == 1 ):
-                return
-        text = "Exportiere Adressen... ({}/{})".format( work_done, work_started )
-        GLib.idle_add( self._gui_update, text )
-    def on_export_finished( self, work_done ):
-        text = "Fertig! 1 Adresse exportiert.".format( work_done ) if work_done == 1 else "Fertig! {} Adressen exportiert.".format( work_done )
-        GLib.idle_add( self._gui_update, text )
-        GLib.idle_add( self._gui_stop )
-    def _gui_start( self ):
-        self._gui_spinner.start()
-    def _gui_update( self, text ):
-        self._gui_label.set_text( text )
-    def _gui_stop( self ):
-        self._gui_spinner.stop()
-        self._gui_assistant.set_page_complete( self._gui_page, True )
+
+
+class GuiLogHandler(logging.Handler):
+    def __init__(self, gui_label, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._gui_label = gui_label
+
+    def emit(self, record):
+        self.format(record)
+        GLib.idle_add(self._gui_label.set_text, record.message)
+
+
+class GuiExporter(threading.Thread):
+    def __init__(self, exporter, gui_objects):
+        threading.Thread.__init__(self)
+        self._exporter = exporter
+        self._gui_spinner, self._gui_label, \
+            self._gui_assistant, self._gui_page = gui_objects
+
+    def run(self):
+        handler = GuiLogHandler(self._gui_label, level=logging.INFO)
+        guilogger = self._exporter.logger
+        guilogger.addHandler(handler)
+        GLib.idle_add(self._gui_spinner.start)
+        self._exporter.start()
+        self._exporter.join()
+        GLib.idle_add(self._gui_spinner.stop)
+        GLib.idle_add(self._gui_assistant.set_page_complete, self._gui_page,
+                      True)
+        guilogger.removeHandler(handler)
+
+
 class AddressExportAssistant( GenericExportAssistant ):
     def __init__( self ):
         filter_csv = Gtk.FileFilter()
@@ -69,6 +71,7 @@ class AddressExportAssistant( GenericExportAssistant ):
         self.begin_label = "Willkommen beim Adressexport-Assistenten."
         self.confirm_label = "Der Exportvorgang kann nun gestartet werden."
         self.summary_label = "Die Adressen wurden erfolgreich exportiert."
+
     def confirm( self, settingswidget, output_file ):
         magazine, issue, date = settingswidget.get_settings()
         self.confirm_label = ""
@@ -83,6 +86,7 @@ class AddressExportAssistant( GenericExportAssistant ):
                 self.confirm_label = "Es werden die <b>Versandadressen aller Kunden</b> exportiert."
         if not self.confirm_label:
             raise RuntimeError( "These settings look strange." )
+
     def export( self, settingswidget, gui_objects, output_file ):
         """
         Starts the export thread.
@@ -100,7 +104,10 @@ class AddressExportAssistant( GenericExportAssistant ):
         # Remove stuff from the session so that it can be re-added in the thread
         self._session.close()
         # Start the Thread
-        watcher = AddressExporter( output_file, magazine, issue, date, gui_objects )
+        #FIXME: CONTINUE HERE
+        formatter = pluginmanager.getPluginsOfCategory(plugintypes.AddressExportFormatter.CATEGORY)[0].plugin_object
+        exporter = AddressExporter(output_file, formatter, magazine, issue, date)
+        watcher = GuiExporter(exporter, gui_objects)
         watcher.start()
 class AddressExportSettings( GenericExportSettings ):
     def __init__( self, session=None ):
