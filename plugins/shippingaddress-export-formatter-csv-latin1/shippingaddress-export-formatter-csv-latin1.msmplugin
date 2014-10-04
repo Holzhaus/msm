@@ -1,0 +1,14 @@
+[Core]
+Name = Lieferaddressen-CSV-Latin1-Exporter
+Slug = shippingaddress-export-formatter-csv-latin1
+Module = shippingaddress-export-formatter-csv-latin1
+
+[Documentation]
+Author = Jan Holthuis
+Version = 0.1
+Website = http://github.com/Holzhaus/msm
+Priority = -9999
+Description = Lieferaddressen als Latin1-CSV exportieren
+
+[Dependencies]
+MSMVersion = 1.0.0

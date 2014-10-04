@@ -59,12 +59,23 @@ class GuiExporter(threading.Thread):
         guilogger.removeHandler(handler)
 
 
-class AddressExportAssistant( GenericExportAssistant ):
-    def __init__( self ):
-        filter_csv = Gtk.FileFilter()
-        filter_csv.set_name( "CSV-Dateien" )
-        filter_csv.add_pattern( "*.csv" )
-        super().__init__( filefilters=[filter_csv] )
+class FileFormatPluginWrapper(Gtk.FileFilter):
+    def __init__(self, plugin_info):
+        super().__init__()
+        self.plugin_info = plugin_info
+        pattern = "*.{}".format(plugin_info.plugin_object.FILE_EXT)
+        self.set_name("{name} ({pattern})".format(name=plugin_info.description,
+                                                  pattern=pattern))
+        self.add_pattern(pattern)
+
+
+class AddressExportAssistant(GenericExportAssistant):
+    def __init__(self):
+        plugins = pluginmanager.getPluginsOfCategory(
+            plugintypes.AddressExportFormatter.CATEGORY)
+        filefilters = [FileFormatPluginWrapper(plugin) for plugin in plugins]
+
+        super().__init__(filefilters=filefilters)
         widget = AddressExportSettings( session=self.session )
         self.set_settingswidget( widget )
         # Customize labels
@@ -104,8 +115,7 @@ class AddressExportAssistant( GenericExportAssistant ):
         # Remove stuff from the session so that it can be re-added in the thread
         self._session.close()
         # Start the Thread
-        #FIXME: CONTINUE HERE
-        formatter = pluginmanager.getPluginsOfCategory(plugintypes.AddressExportFormatter.CATEGORY)[0].plugin_object
+        formatter = self.output_filter.plugin_info.plugin_object
         exporter = AddressExporter(output_file, formatter, magazine, issue, date)
         watcher = GuiExporter(exporter, gui_objects)
         watcher.start()

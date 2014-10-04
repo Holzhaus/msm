@@ -1,0 +1,14 @@
+[Core]
+Name = Lieferaddressen-CSV-UTF8-Exporter
+Slug = shippingaddress-export-formatter-csv-utf8
+Module = shippingaddress-export-formatter-csv-utf8
+
+[Documentation]
+Author = Jan Holthuis
+Version = 0.1
+Website = http://github.com/Holzhaus/msm
+Priority = -9999
+Description = Lieferaddressen als UTF-8-CSV exportieren
+
+[Dependencies]
+MSMVersion = 1.0.0

@@ -167,14 +167,11 @@ class GenericExportAssistant( GObject.GObject, ScopedDatabaseObject ):
         if button.get_active():
             dialog = Gtk.FileChooserDialog( "Bitte Speicherort festlegen", self._assistant, Gtk.FileChooserAction.SAVE, ( Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OPEN, Gtk.ResponseType.OK ) )
             for filefilter in self.filefilters:
-                dialog.add_filter( filefilter )
-            filter_any = Gtk.FileFilter()
-            filter_any.set_name( "Alle Dateien" )
-            filter_any.add_pattern( "*" )
-            dialog.add_filter( filter_any )
+                dialog.add_filter(filefilter)
             response = dialog.run()
             if response == Gtk.ResponseType.OK:
                 self.output_file = dialog.get_filename()
+                self.output_filter = dialog.get_filter()
                 page = self._assistant.get_nth_page( GenericExportAssistant.Page.Intro )
                 self._assistant.set_page_complete( page, True )
             dialog.destroy()

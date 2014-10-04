@@ -4,10 +4,12 @@ import core.plugintypes
 
 
 class AddressExportFormatterCSV(core.plugintypes.AddressExportFormatter):
-    def write(self, contracts, output_file, encoding='utf-8'):
+    FILE_EXT = 'csv'
+
+    def write(self, contracts, output_file):
         fieldnames = ['RECIPIENT', 'CO', 'STREET', 'CITY', 'POSTALCODE',
                       'COUNTRYCODE', 'COUNTRYNAME', 'CONTRACTNUMBER']
-        with open(output_file, 'w', newline='', encoding=encoding) as f:
+        with open(output_file, 'w', newline='', encoding='latin1') as f:
             csvwriter = csv.writer(f, delimiter=';', quotechar='"',
                                    quoting=csv.QUOTE_ALL)
             csvwriter.writerow(fieldnames)

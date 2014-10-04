@@ -20,6 +20,7 @@ class AbstractMSMPlugin(IPlugin):
 
 class AddressExportFormatter(AbstractMSMPlugin):
     CATEGORY = "address-export-format"
+    FILE_EXT = "*"
 
     def __init__(self):
         super(AbstractMSMPlugin, self).__init__()

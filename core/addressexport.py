@@ -44,7 +44,7 @@ def get_contracts( magazine=None, issue=None, date=None, session=None ):
     return contracts
 
 class AddressExporter( threading.Thread, ScopedDatabaseObject ):
-    def __init__( self, output_file, formatter, magazine, issue, date, encoding='utf-8', update_step=25 ):
+    def __init__( self, output_file, formatter, magazine, issue, date, update_step=25 ):
         self.logger = logging.getLogger(__name__)
         threading.Thread.__init__( self )
         ScopedDatabaseObject.__init__( self )
@@ -53,7 +53,6 @@ class AddressExporter( threading.Thread, ScopedDatabaseObject ):
         self._magazine = magazine
         self._issue = issue
         self._date = date
-        self._enc = encoding
         self._update_step = update_step
     def run( self ):
         self.logger.info("Hole Adressen aus Datenbank...")
@@ -74,8 +73,7 @@ class AddressExporter( threading.Thread, ScopedDatabaseObject ):
         self.logger.info("Exportiere 1 Adresse..." if num_contracts == 1 else "Exportiere {} Adressen...".format(num_contracts))
 
         for work_done, work_total in self._formatter.write(contracts,
-                                                           self._output_file,
-                                                           encoding=self._enc):
+                                                           self._output_file):
             if (not self._update_step or
                (work_done % self._update_step) == 0 or
                work_done in (0, 1)):
