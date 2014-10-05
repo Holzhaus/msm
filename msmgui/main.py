@@ -19,6 +19,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, Gio, GLib
+from core import paths
 import msmgui.widgets.customerwindow
 import msmgui.widgets.invoicewindow
 import msmgui.dialogs.about
@@ -52,7 +53,7 @@ class MainWindow( Gtk.ApplicationWindow ):
         self.set_wmclass( "MSM", "MSM" )
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/main.glade" )
+        self.builder.add_from_file(paths.data("ui", "main.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.builder.connect_signals( self )
 

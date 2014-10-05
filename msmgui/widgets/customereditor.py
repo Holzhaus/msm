@@ -19,6 +19,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, GObject
+from core import paths
 import core.database
 from msmgui.widgets.maineditor import MainEditor
 from msmgui.widgets.addresseditor import AddressEditor
@@ -45,7 +46,7 @@ class CustomerEditor( Gtk.Box, ScopedDatabaseObject ):
         self._customer = None
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/customerwindow/customereditor.glade" )
+        self.builder.add_from_file( paths.data("ui","widgets","customerwindow", "customereditor.glade"))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals

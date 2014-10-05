@@ -19,6 +19,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, GObject
+from core import paths
 import core.database
 import core.autocompletion
 import msmgui.rowreference
@@ -44,7 +45,7 @@ class BankaccountEditor( Gtk.Box, ScopedDatabaseObject ):
         self.signals_blocked = True
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/customerwindow/customereditor/bankaccounteditor.glade" )
+        self.builder.add_from_file( paths.data("ui","widgets","customerwindow", "customereditor", "bankaccounteditor.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals

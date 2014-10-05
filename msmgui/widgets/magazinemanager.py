@@ -22,6 +22,7 @@ import locale
 import dateutil.parser
 from gi.repository import Gtk, GObject
 import core.database
+from core import paths
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
 class MagazineManagerRowReference( msmgui.rowreference.GenericRowReference ):
@@ -49,7 +50,7 @@ class MagazineManager( Gtk.Box, ScopedDatabaseObject ):
         self._customer = None
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/magazinemanager.glade" )
+        self.builder.add_from_file( paths.data ("ui","widgets","magazinemanager.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals

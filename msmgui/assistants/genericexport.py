@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, GObject
 from msmgui.widgets.base import ScopedDatabaseObject
+from core import paths
 class GenericExportAssistant( GObject.GObject, ScopedDatabaseObject ):
     class Page:
         """
@@ -56,7 +57,7 @@ class GenericExportAssistant( GObject.GObject, ScopedDatabaseObject ):
         self.filefilters = filefilters.copy()
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/assistants/genericexport.glade" )
+        self.builder.add_from_file( paths.data("ui","assistants","genericexport.glade" ))
         self._assistant = self.builder.get_object( "content" )
         self._assistant.set_modal( True )
         self._assistant.set_forward_page_func( self.page_forward_func )

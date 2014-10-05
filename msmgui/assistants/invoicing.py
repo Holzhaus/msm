@@ -23,6 +23,7 @@ import datetime
 import threading
 import dateutil.parser
 from gi.repository import Gtk, GObject, GLib
+from core import paths
 import core.database
 from core.errors import InvoiceError
 import msmgui.widgets.invoicetable
@@ -34,7 +35,7 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
         GObject.GObject.__init__( self )
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/assistants/invoicing.glade" )
+        self.builder.add_from_file( paths.data("ui","assistants","invoicing.glade" ))
         self._assistant = self.builder.get_object( "content" )
         self._assistant.set_modal( True )
 

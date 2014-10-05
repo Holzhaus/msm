@@ -19,6 +19,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import GObject, Gtk
+from core import paths
 from core.config import Config
 import msmgui.widgets.customereditor
 import msmgui.widgets.customertable
@@ -31,6 +32,7 @@ class CustomerWindow( msmgui.widgets.base.RefreshableWindow ):
         self._customertable = msmgui.widgets.customertable.CustomerTable()
         msmgui.widgets.base.RefreshableWindow.__init__( self, [self._customertable] )
         self.builder = Gtk.Builder()
+        self.builder.add_from_file( paths.data("ui","widgets","customerwindow", "customerwindow.glade"))
         self.builder.add_from_file( "data/ui/widgets/customerwindow/customerwindow.glade" )
         self.builder.get_object( "content" ).reparent( self )
         self.builder.connect_signals( self )

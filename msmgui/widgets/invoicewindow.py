@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import GObject, Gtk
 from core.config import Config
+from core import paths
 import msmgui.widgets.invoicetable
 import msmgui.assistants.invoicing
 import msmgui.assistants.letterexport
@@ -32,7 +33,7 @@ class InvoiceWindow( msmgui.widgets.base.RefreshableWindow ):
         self._invoicetable = msmgui.widgets.invoicetable.InvoiceTable()
         msmgui.widgets.base.RefreshableWindow.__init__( self, [self._invoicetable] )
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/invoicewindow/invoicewindow.glade" )
+        self.builder.add_from_file( paths.data("ui","widgets","invoicewindow", "invoicewindow.glade"))
         self.builder.get_object( "content" ).reparent( self )
         self.builder.connect_signals( self )
 

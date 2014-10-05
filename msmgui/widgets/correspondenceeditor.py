@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger( __name__ )
 import locale
 from gi.repository import Gtk, GObject
+from core import paths
 import core.database
 from core.letterrenderer import LetterPreviewRenderer
 import msmgui.rowreference
@@ -47,7 +48,7 @@ class CorrespondenceEditor( Gtk.Box, ScopedDatabaseObject ):
         self._customer = None
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/customerwindow/customereditor/correspondenceeditor.glade" )
+        self.builder.add_from_file( paths.data("ui","widgets","customerwindow", "customereditor", "correspondenceeditor.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals

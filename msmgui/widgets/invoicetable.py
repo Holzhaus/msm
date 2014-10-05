@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, GObject, GLib
 import core.database
+from core import paths
 from core.config import Config
 import locale
 import msmgui.rowreference
@@ -80,7 +81,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         Gtk.Box.__init__( self )
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/invoicewindow/invoicetable.glade" )
+        self.builder.add_from_file( paths.data("ui","widgets","invoicewindow", "invoicetable.glade"))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals

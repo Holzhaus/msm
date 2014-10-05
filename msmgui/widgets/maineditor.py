@@ -21,6 +21,7 @@ logger = logging.getLogger( __name__ )
 import locale
 import dateutil.parser
 from gi.repository import Gtk, GObject
+from core import paths
 from core.database import GenderType
 from msmgui.widgets.base import ScopedDatabaseObject
 class MainEditor( Gtk.Box, ScopedDatabaseObject ):
@@ -35,7 +36,7 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
         self._customer = None
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/customerwindow/customereditor/maineditor.glade" )
+        self.builder.add_from_file(paths.data("ui", "widgets", "customerwindow","customereditor","maineditor.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         # Connect Signals

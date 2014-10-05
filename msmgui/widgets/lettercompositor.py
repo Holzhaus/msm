@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk, Gdk, GObject, GdkPixbuf
 from core.database import Note
+from core import paths
 from core.lettercomposition import LetterComposition, InvoicePlaceholder, Criterion
 import msmgui.rowreference
 TARGET_ENTRY_PYOBJECT = 0
@@ -39,7 +40,7 @@ class LetterCompositor( Gtk.Box ):
     def __init__( self ):
         Gtk.Box.__init__( self )
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/lettercompositor.glade" )
+        self.builder.add_from_file( paths.data("ui", "widgets", "lettercompositor.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         self.builder.connect_signals( self )

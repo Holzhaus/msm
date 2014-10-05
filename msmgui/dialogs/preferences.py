@@ -19,6 +19,7 @@
 import logging
 logger = logging.getLogger( __name__ )
 from gi.repository import Gtk
+from core import paths
 import core.database
 from core.config import Config
 from msmgui.widgets.magazinemanager import MagazineManager
@@ -35,7 +36,7 @@ class PreferencesDialog( ScopedDatabaseObject ):
         self._parent = parent
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/dialogs/preferences.glade" )
+        self.builder.add_from_file( paths.data("ui","dialogs","preferences.glade"))
         self.builder.get_object( "content" ).set_transient_for( self._parent )
         self.builder.get_object( "content" ).set_modal( True )
         # Connect Signals

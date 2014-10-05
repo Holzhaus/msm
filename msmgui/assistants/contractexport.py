@@ -23,6 +23,7 @@ import locale
 import datetime
 import dateutil.parser
 from gi.repository import Gtk, GLib
+from core import paths
 from core.pluginmanager import PluginManagerSingleton as pluginmanager, plugintypes
 from core.database import Magazine, Issue
 from core.contractexport import ContractExporter
@@ -124,7 +125,7 @@ class ContractExportSettings( GenericExportSettings ):
         super().__init__( session=session )
         # Build GUI
         self.builder = Gtk.Builder()
-        self.builder.add_from_file( "data/ui/widgets/contractexportsettings.glade" )
+        self.builder.add_from_file( paths.data("ui","widgets","contractexportsettings.glade" ))
         self.builder.get_object( "content" ).reparent( self )
         self.set_child_packing( self.builder.get_object( "content" ), True, True, 0, Gtk.PackType.START )
         self.builder.connect_signals( self )
