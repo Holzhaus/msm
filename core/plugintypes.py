@@ -32,3 +32,15 @@ class ContractExportFormatter(AbstractMSMPlugin):
     def write_all(self, *args, **kwargs):
         for x in self.write(*args, **kwargs):
             pass
+
+
+class BookingImporter(AbstractMSMPlugin):
+    CATEGORY = "booking-importer"
+    FILE_EXT = "*"
+
+    def __init__(self):
+        super(AbstractMSMPlugin, self).__init__()
+
+    @abstractmethod
+    def read(self, input_file):
+        pass

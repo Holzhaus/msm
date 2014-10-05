@@ -1,0 +1,14 @@
+[Core]
+Name = Bankumsatz-Importer für XLS-Datei der Sparda-Bank
+Slug = bookkeepingentry-import-spardabankxls
+Module = bookkeepingentry-import-spardabankxls
+
+[Documentation]
+Author = Jan Holthuis
+Version = 0.1
+Website = http://github.com/Holzhaus/msm
+Priority = -9999
+Description = Umsätze von Sparda-Bank-XLS-Datei importieren
+
+[Dependencies]
+MSMVersion = 1.0.0

@@ -133,7 +133,9 @@ class MSMPluginManager(PluginManager):
                                 os.pardir,
                                 "plugins")]
     PLUGIN_CATS = {plugintypes.ContractExportFormatter.CATEGORY:
-                   plugintypes.ContractExportFormatter}
+                   plugintypes.ContractExportFormatter,
+                   plugintypes.BookingImporter.CATEGORY:
+                   plugintypes.BookingImporter}
 
     def __init__(self):
         super(MSMPluginManager, self).__init__(

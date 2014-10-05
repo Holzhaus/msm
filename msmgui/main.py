@@ -23,6 +23,7 @@ import msmgui.widgets.customerwindow
 import msmgui.widgets.invoicewindow
 import msmgui.dialogs.about
 import msmgui.assistants.contractexport
+import msmgui.assistants.bookingimport
 class MainWindow( Gtk.ApplicationWindow ):
     def __init__( self, application ):
         """
@@ -64,11 +65,16 @@ class MainWindow( Gtk.ApplicationWindow ):
 
         self._aboutdialog = msmgui.dialogs.about.AboutDialog( self )
         self._contractexportassistant = msmgui.assistants.contractexport.ContractExportAssistant()
+        self._bookingimportassistant = msmgui.assistants.bookingimport.BookingImportAssistant()
 
         # MenuBar Actions
         contractexport_action = Gio.SimpleAction.new("contractexport", None)
         contractexport_action.connect("activate", self.contractexport_cb)
         self.add_action(contractexport_action)
+
+        bookingimport_action = Gio.SimpleAction.new("bookingimport", None)
+        bookingimport_action.connect("activate", self.bookingimport_cb)
+        self.add_action(bookingimport_action)
 
         about_action = Gio.SimpleAction.new("about", None)
         about_action.connect("activate", self.about_cb)
@@ -102,6 +108,19 @@ class MainWindow( Gtk.ApplicationWindow ):
         """
         self._contractexportassistant.set_parent( self.get_toplevel() )
         self._contractexportassistant.show()
+
+    def bookingimport_cb(self, action, parameter):
+        """
+        Callback for the "contractexport"-action of the MenuBar. Shows the BookingImport dialog.
+        Arguments:
+            action:
+                the Gio.SimpleAction that emitted the "activate" signal
+            parameter:
+                the parameter to the activation
+        """
+        self._bookingimportassistant.set_parent( self.get_toplevel() )
+        self._bookingimportassistant.show()
+
     def about_cb( self, action, parameter ):
         """
         Callback for the "about"-action of the MenuBar. Shows the about dialog.

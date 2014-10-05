@@ -40,6 +40,15 @@
       </section>
     </submenu>
     <submenu>
+      <attribute name="label">Import</attribute>
+      <section>
+        <item>
+          <attribute name ="label">Kontoumsätze importieren</attribute>
+          <attribute name="action">win.bookingimport</attribute>
+        </item>
+      </section>
+    </submenu>
+    <submenu>
       <attribute name="label">Hilfe</attribute>
       <section>
         <item>
