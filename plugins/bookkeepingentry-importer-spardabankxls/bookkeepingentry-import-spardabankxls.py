@@ -27,13 +27,13 @@ class BookingImporterSpardaBankXLS(core.plugintypes.BookingImporter):
                 info = matchobj.groupdict()
                 if not info['currency'] == 'EUR':
                     continue
-                date = dateutil.parser.parse(info['valuedate'])
-                value = locale.atof(info['value'])
+                date = dateutil.parser.parse(info['valuedate']).date()
+                value = -locale.atof(info['value'])
                 description = "{description} (Buchungstag: {bookingdate}, Wertstellungstag: {valuedate}, Betrag: {value}, Währung: {currency})".format(**info)
                 contractsearch = self.PATTERN_CONTRACT.search(info['description'])
                 if not contractsearch:
                     continue
                 contractinfo = contractsearch.groupdict()
-                yield (date, value, description, contractinfo['contractnumber'], contractinfo['invoicenumber'])
+                yield (date, value, description, contractinfo['contractnumber'], int(contractinfo['invoicenumber']))
         else:
             yield

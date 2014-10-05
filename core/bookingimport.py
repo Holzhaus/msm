@@ -43,7 +43,7 @@ class BookingImporter(threading.Thread, ScopedDatabaseObject):
                i in (0, 1)):
                 self.logger.info("Analysiere Datensatz %d von %d...", i, num_entries)
             date, value, description, contractnumber, invoicenumber = data
-            entry = BookkeepingEntry(date, value, description)
+
             if not Contract.is_valid_refid(contractnumber):
                 self.logger.debug("Invalid contract refid '%s'" % contractnumber)
                 continue
@@ -53,21 +53,23 @@ class BookingImporter(threading.Thread, ScopedDatabaseObject):
                 self.logger.debug("Cant find contract for refid '%s'" % contractnumber)
                 continue
 
-            num_entries_in_db = self._session.query(BookkeepingEntry).filter_by(date=entry.date).filter_by(value=entry.value).filter_by(contract_id=contract.id).filter_by(date=entry.date).filter_by(description=entry.description).count()
-            if num_entries_in_db != 0:
-                self.logger.debug("Entry already in database, skipping")
+            invoices = [invoice for invoice in contract.invoices if invoice.number == invoicenumber]
+            if len(invoices) != 1:
+                self.logger.debug("Cant find invoice '%s-%d'", contractnumber, invoicenumber)
+            invoice = invoices[0]
+
+            already_in_db = False
+            for entry in invoice.entries:
+                if (entry.date == date and
+                   entry.value == value and 
+                   entry.description == description):
+                    already_in_db = True
+                    break
+            if already_in_db:
+                self.logger.debug("Entry already in database, skipping...")
                 continue
 
-            invoices = [invoice for invoice in contract.invoices if invoice.number == invoicenumber]
-            invoice = None
-            if len(invoices) == 1:
-                invoice = invoices[0]
-                invoice.bookkeeping_entries.append(entry)
-            elif len(invoices) == 0:
-                contract.bookkeeping_entries.append(entry)
-            else:
-                self.logger.debug('Multiple Invoices with the same number!')
-                continue
+            invoice.add_entry(date, value, description)
             entries_added += 1
         if entries_added:
             self.logger.info('Schreibe %d von %d Datensätzen in Datenbank...', entries_added, num_entries)
