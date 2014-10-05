@@ -134,6 +134,8 @@ class MSMPluginManager(PluginManager):
                                 "plugins")]
     PLUGIN_CATS = {plugintypes.ContractExportFormatter.CATEGORY:
                    plugintypes.ContractExportFormatter,
+                   plugintypes.DirectDebitExportFormatter.CATEGORY:
+                   plugintypes.DirectDebitExportFormatter,
                    plugintypes.BookingImporter.CATEGORY:
                    plugintypes.BookingImporter}
 

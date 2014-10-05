@@ -37,6 +37,10 @@
           <attribute name ="label">Vertragsdaten exportieren</attribute>
           <attribute name="action">win.contractexport</attribute>
         </item>
+        <item>
+          <attribute name ="label">Lastschriften exportieren</attribute>
+          <attribute name="action">win.directdebitexport</attribute>
+        </item>
       </section>
     </submenu>
     <submenu>

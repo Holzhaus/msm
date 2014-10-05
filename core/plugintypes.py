@@ -34,6 +34,22 @@ class ContractExportFormatter(AbstractMSMPlugin):
             pass
 
 
+class DirectDebitExportFormatter(AbstractMSMPlugin):
+    CATEGORY = "directdebit-export-format"
+    FILE_EXT = "*"
+
+    def __init__(self):
+        super(AbstractMSMPlugin, self).__init__()
+
+    @abstractmethod
+    def write(self, invoices, output_file, encoding='utf-8'):
+        pass
+
+    def write_all(self, *args, **kwargs):
+        for x in self.write(*args, **kwargs):
+            pass
+
+
 class BookingImporter(AbstractMSMPlugin):
     CATEGORY = "booking-importer"
     FILE_EXT = "*"

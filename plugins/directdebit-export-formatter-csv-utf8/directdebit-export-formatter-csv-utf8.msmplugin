@@ -1,0 +1,14 @@
+[Core]
+Name = Lastschriften-CSV-UTF-8-Exporter
+Slug = directdebit-export-formatter-csv-utf8
+Module = directdebit-export-formatter-csv-utf8
+
+[Documentation]
+Author = Jan Holthuis
+Version = 0.1
+Website = http://github.com/Holzhaus/msm
+Priority = -9999
+Description = Lastschriften als UTF-8-CSV exportieren
+
+[Dependencies]
+MSMVersion = 1.0.0
