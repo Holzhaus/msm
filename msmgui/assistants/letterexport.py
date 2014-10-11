@@ -19,7 +19,6 @@
 import logging
 from core.database import LetterCollection
 logger = logging.getLogger( __name__ )
-import locale
 from gi.repository import Gtk, GObject, GLib
 import sqlalchemy.orm.session
 from core import paths
@@ -109,7 +108,7 @@ class LetterExportAssistant( GenericExportAssistant ):
     def confirm( self, settingswidget, output_file ):
         lettercollection, new_name, new_composition = settingswidget.get_settings()
         if lettercollection is not None:
-            self.confirm_label = "Die Briefsammlung <b>„{}“</b> vom <b>{}</b> wird erneut als PDF gerendert.\nDie Sammlung enthält:\n{}".format( lettercollection.name if lettercollection.name else "Unbenannt", lettercollection.creation_date.strftime( locale.nl_langinfo( locale.D_FMT ) ), lettercollection.description )
+            self.confirm_label = "Die Briefsammlung <b>„{}“</b> vom <b>{}</b> wird erneut als PDF gerendert.\nDie Sammlung enthält:\n{}".format( lettercollection.name if lettercollection.name else "Unbenannt", lettercollection.creation_date.strftime("%x"), lettercollection.description )
         elif new_name is not None and new_composition is not None:
             self.confirm_label = "Es wird eine <b>neue Briefsammlung</b> mit der Bezeichnung <b>„{}“</b> angelegt und im Anschluss als PDF gerendert.\nDie Sammlung soll folgendes enthalten:\n{}".format( new_name, new_composition.get_description() )
         else:
@@ -207,7 +206,7 @@ class LetterExportSettings( GenericExportSettings ):
         model.clear()
         for lettercollection in LetterCollection.get_all( session=self.session ):
             text_name = lettercollection.name if lettercollection.name else "Unbenannt"
-            text_date = lettercollection.creation_date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+            text_date = lettercollection.creation_date.strftime("%x")
             treeiter = model.append( [lettercollection, "{} ({})".format( text_name, text_date )] )
             if selected_lettercollection is not None and lettercollection.id == selected_lettercollection.id:
                 self.builder.get_object( "lettercollection_combobox" ).set_active_iter( treeiter )

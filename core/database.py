@@ -606,12 +606,12 @@ class Contract( Base ):
             if previous_invoice is not None and accounting_startdate <= previous_invoice.accounting_enddate: # we don't want that our customers have to pay twice
                 raise InvoiceError( "accounting period overlaps with the accounting period of the last invoice" )
             elif accounting_startdate < self.startdate:
-                raise InvoiceError( "accounting period starts before the contract ({} < {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), self.startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
+                raise InvoiceError( "accounting period starts before the contract ({} < {})".format( accounting_startdate.strftime("%x"), self.startdate.strftime("%x") ) )
         if self.enddate is not None and self.enddate < accounting_enddate:
             logger.info( 'account period ends after the contract was terminated, correcting...' )
             accounting_enddate = self.enddate
         if accounting_startdate >= accounting_enddate:
-            raise InvoiceError( "accounting_startdate has to be earlier than accountig_enddate ({} >= {})".format( accounting_startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), accounting_enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
+            raise InvoiceError( "accounting_startdate has to be earlier than accountig_enddate ({} >= {})".format( accounting_startdate.strftime("%x"), accounting_enddate.strftime("%x") ) )
         # Now we can continue as everything should be fine now
         invoice = Invoice( date=date, maturity_date=maturity_date, accounting_startdate=accounting_startdate, accounting_enddate=accounting_enddate )
         self.invoices.append( invoice )
@@ -670,7 +670,7 @@ class LetterCollection( Base ):
         if self.name:
             return self.name
         else:
-            return "Unnamed Lettercollection ({})".format( self.creation_date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+            return "Unnamed Lettercollection ({})".format( self.creation_date.strftime("%x") )
 
 letter_association_table = Table( 'letter_association', Base.metadata,
     Column( 'letter_id', Integer, ForeignKey( 'letters.id' ) ),
@@ -789,7 +789,7 @@ class Invoice( LetterPart ):
             value = float( value_unrounded.quantize( step, decimal.ROUND_HALF_EVEN ) )
             if value == 0:
                 continue
-            desc = "{}, {}, {} Ausgaben ({} bis {})".format( self.contract.subscription.magazine. name, self.contract.subscription.name, num_issues_received, startdate.strftime( locale.nl_langinfo( locale.D_FMT ) ), enddate.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+            desc = "{}, {}, {} Ausgaben ({} bis {})".format( self.contract.subscription.magazine. name, self.contract.subscription.name, num_issues_received, startdate.strftime("%x"), enddate.strftime("%x") )
             self.add_entry( enddate, value, desc )
     def assign_number( self ):
         """Get a new invoice number. The reason why we can't just use the id column is, that invoice numbers need to be ascending *per contract* (according to german law)."""

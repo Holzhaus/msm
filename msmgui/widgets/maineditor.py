@@ -18,7 +18,6 @@
 """
 import logging
 logger = logging.getLogger( __name__ )
-import locale
 import dateutil.parser
 from gi.repository import Gtk, GObject
 from core import paths
@@ -67,7 +66,7 @@ class MainEditor( Gtk.Box, ScopedDatabaseObject ):
         self._gui_set_combobox_text( self.builder.get_object( 'honourific_comboboxtext' ), self._customer.honourific )
         self._gui_set_combobox_text( self.builder.get_object( 'title_comboboxtext' ), self._customer.title )
         self.builder.get_object( 'gender_combobox' ).set_active( self._customer.gender if self._customer.gender else GenderType.Undefined )
-        self.builder.get_object( 'birthday_entry' ).set_text( self._customer.birthday.strftime( locale.nl_langinfo( locale.D_FMT ) ) if self._customer.birthday else "" )
+        self.builder.get_object( 'birthday_entry' ).set_text( self._customer.birthday.strftime("%x") if self._customer.birthday else "" )
         self.builder.get_object( 'company1_entry' ).set_text( self._customer.company1 if self._customer.company1 else "" )
         self.builder.get_object( 'company2_entry' ).set_text( self._customer.company2 if self._customer.company2 else "" )
         self.builder.get_object( 'department_entry' ).set_text( self._customer.department if self._customer.department else "" )

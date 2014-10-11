@@ -18,7 +18,6 @@
 """
 import logging
 logger = logging.getLogger( __name__ )
-import locale
 from gi.repository import Gtk, GObject
 from core import paths
 import core.database
@@ -90,7 +89,7 @@ class CorrespondenceEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = CorrespondeceRowReference( model, model.get_path( treeiter ) )
         letter = rowref.get_letter()
         if letter.date:
-            new_text = letter.date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+            new_text = letter.date.strftime("%x")
         else:
             raise ValueError( "Letter must have a date" )
         cellrenderer.set_property( 'text', new_text )

@@ -22,7 +22,6 @@ from gi.repository import Gtk, GObject, GLib
 from core import paths
 import core.database
 from core.config import Config
-import locale
 import msmgui.rowreference
 from msmgui.widgets.base import ScopedDatabaseObject
 class CustomerRowReference( msmgui.rowreference.GenericRowReference ):
@@ -151,7 +150,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
     def convert_customer_to_rowdata( customer ):
         if not isinstance( customer, core.database.Customer ):
             raise TypeError( "Expected core.database.Customer, not {}".format( type( customer ).__name__ ) )
-        birthday = customer.birthday.strftime( locale.nl_langinfo( locale.D_FMT ) ) if customer.birthday else ""
+        birthday = customer.birthday.strftime("%x") if customer.birthday else ""
         has_running_contracts = customer.has_running_contracts()
         color = 'black' if has_running_contracts else 'gray'
         if len( customer.addresses ):

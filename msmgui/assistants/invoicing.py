@@ -18,7 +18,6 @@
 """
 import logging
 logger = logging.getLogger( __name__ )
-import locale
 import datetime
 import threading
 import dateutil.parser
@@ -51,9 +50,9 @@ class InvoicingAssistant( GObject.GObject, ScopedDatabaseObject ):
     def show( self ):
         invoice_date = datetime.date.today()
         maturity_date = invoice_date + datetime.timedelta( days=14 )
-        self.builder.get_object( "invoice_date_entry" ).set_text( invoice_date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
-        self.builder.get_object( "invoice_maturitydate_entry" ).set_text( maturity_date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
-        self.builder.get_object( "invoice_accountingenddate_entry" ).set_text( invoice_date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+        self.builder.get_object( "invoice_date_entry" ).set_text( invoice_date.strftime("%x") )
+        self.builder.get_object( "invoice_maturitydate_entry" ).set_text( maturity_date.strftime("%x") )
+        self.builder.get_object( "invoice_accountingenddate_entry" ).set_text( invoice_date.strftime("%x") )
         self.builder.get_object( "content" ).show_all()
     class Page:
         """ Page Enum """

@@ -116,7 +116,7 @@ class PrerenderThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
                                'subscription_name':invoice.contract.subscription.name,
                                'magazine_name':invoice.contract.subscription.magazine.name,
                                'total':locale.currency( invoice.value_left ),
-                               'maturity_date': invoice.maturity_date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+                               'maturity_date': invoice.maturity_date.strftime("%x")
                              } )
         entries = []
         for i, entry in enumerate( invoice.entries ):

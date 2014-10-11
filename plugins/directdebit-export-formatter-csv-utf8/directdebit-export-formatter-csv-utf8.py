@@ -1,6 +1,5 @@
 import csv
 import pytz
-import locale
 import core.plugintypes
 
 
@@ -24,7 +23,7 @@ class DirectDebitExportFormatterCSV(core.plugintypes.DirectDebitExportFormatter)
                 # FIXME: improvement needed
                 description = "{magazine}, {subscription} ({contractnumber}-{invoicenumber}), Abrechnungzeitraum {startdate} bis {enddate}".format(magazine=contract.subscription.magazine.name,
                   contractnumber=contract.refid, invoicenumber=invoice.number, subscription=contract.subscription.name,
-                  startdate=invoice.accounting_startdate.strftime(locale.nl_langinfo(locale.D_FMT)), enddate=invoice.accounting_enddate.strftime(locale.nl_langinfo(locale.D_FMT)))
+                  startdate=invoice.accounting_startdate.strftime("%x"), enddate=invoice.accounting_enddate.strftime("%x"))
 
                 row = [contract.customer.name,
                        contract.refid,

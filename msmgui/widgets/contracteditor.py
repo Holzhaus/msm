@@ -93,7 +93,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = ContractRowReference( model, model.get_path( treeiter ) )
         contract = rowref.get_contract()
         if contract.startdate:
-            new_text = contract.startdate.strftime( locale.nl_langinfo( locale.D_FMT ) )
+            new_text = contract.startdate.strftime("%x")
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
@@ -101,7 +101,7 @@ class ContractEditor( Gtk.Box, ScopedDatabaseObject ):
         rowref = ContractRowReference( model, model.get_path( treeiter ) )
         contract = rowref.get_contract()
         if contract.enddate:
-            new_text = contract.enddate.strftime( locale.nl_langinfo( locale.D_FMT ) )
+            new_text = contract.enddate.strftime("%x")
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )

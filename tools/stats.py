@@ -58,7 +58,7 @@ if __name__ == "__main__":
     session = core.database.Database.get_scoped_session()
 
     dateobj = datetime.date.today()
-    print( 'Anzahl der Verträge am {}'.format( dateobj.strftime( locale.nl_langinfo( locale.D_FMT ) ) ) )
+    print( 'Anzahl der Verträge am {}'.format( dateobj.strftime("%x") ) )
     contractnums = {}
     for contract in core.database.Contract.get_all():
         if contract.is_running( dateobj ):

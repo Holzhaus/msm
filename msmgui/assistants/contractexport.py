@@ -19,7 +19,6 @@
 import logging
 logger = logging.getLogger( __name__ )
 import threading
-import locale
 import datetime
 import dateutil.parser
 from gi.repository import Gtk, GLib
@@ -88,12 +87,12 @@ class ContractExportAssistant(GenericExportAssistant):
         magazine, issue, date = settingswidget.get_settings()
         self.confirm_label = ""
         if issue is not None:
-            self.confirm_label = "Es werden Vertragsdaten der Kunden, die <b>Ausgabe {}-{}</b> (vom {}) der Zeitschrift <b>{}</b> erhalten haben exportiert.".format( issue.year, issue.number, issue.date.strftime( locale.nl_langinfo( locale.D_FMT ) ), issue.magazine.name )
+            self.confirm_label = "Es werden Vertragsdaten der Kunden, die <b>Ausgabe {}-{}</b> (vom {}) der Zeitschrift <b>{}</b> erhalten haben exportiert.".format( issue.year, issue.number, issue.date.strftime("%x"), issue.magazine.name )
         elif magazine is not None:
-            self.confirm_label = "Es werden Vertragsdaten der Kunden, die am <b>{}</b> die Zeitschrift <b>{}</b> abonniert haben oder hatten, exportiert.".format( date.strftime( locale.nl_langinfo( locale.D_FMT ) ), magazine.name )
+            self.confirm_label = "Es werden Vertragsdaten der Kunden, die am <b>{}</b> die Zeitschrift <b>{}</b> abonniert haben oder hatten, exportiert.".format( date.strftime("%x"), magazine.name )
         else:
             if date is not None:
-                self.confirm_label = "Es werden Vertragsdaten der Kunden, die am <b>{}</b> eine Zeitschrift abonniert haben oder hatten, exportiert.".format( date.strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+                self.confirm_label = "Es werden Vertragsdaten der Kunden, die am <b>{}</b> eine Zeitschrift abonniert haben oder hatten, exportiert.".format( date.strftime("%x") )
             else:
                 self.confirm_label = "Es werden Vertragsdaten aller Kunden exportiert."
         if not self.confirm_label:
@@ -141,10 +140,10 @@ class ContractExportSettings( GenericExportSettings ):
             self.builder.get_object( "mag_combobox" ).set_active( 0 )
         alldate_entry = self.builder.get_object( "alldate_entry" )
         if not alldate_entry.get_text().strip():
-            alldate_entry.set_text( datetime.date.today().strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+            alldate_entry.set_text( datetime.date.today().strftime("%x"))
         magdate_entry = self.builder.get_object( "magdate_entry" )
         if not magdate_entry.get_text().strip():
-            magdate_entry.set_text( datetime.date.today().strftime( locale.nl_langinfo( locale.D_FMT ) ) )
+            magdate_entry.set_text( datetime.date.today().strftime("%x"))
     def get_magazine( self ):
         combo = self.builder.get_object( "mag_combobox" )
         model = combo.get_model()

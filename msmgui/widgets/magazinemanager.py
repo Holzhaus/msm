@@ -230,7 +230,7 @@ class MagazineEditor( Gtk.Box, ScopedDatabaseObject ):
         issue = rowref.get_issue()
         if not isinstance( issue, core.database.Issue ):
             raise TypeError
-        new_text = issue.date.strftime( locale.nl_langinfo( locale.D_FMT ) ) if issue.date else ""
+        new_text = issue.date.strftime("%x") if issue.date else ""
         cellrenderer.set_property( 'text', new_text )
     def issues_number_cell_data_func( self, column, cellrenderer, model, treeiter, user_data=None ):
         rowref = IssueRowReference( model, model.get_path( treeiter ) )

@@ -294,7 +294,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         rowref = InvoiceRowReference( model, model.get_path( treeiter ) )
         invoice = rowref.get_invoice()
         if invoice.date:
-            new_text = invoice.date.strftime( locale.nl_langinfo( locale.D_FMT ) )
+            new_text = invoice.date.strftime("%x")
         else:
             new_text = ""
         cellrenderer.set_property( 'text', new_text )
