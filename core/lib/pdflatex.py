@@ -26,7 +26,7 @@ def compile_str(latexstr, *args, **kwargs):
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(latexstr.encode('UTF-8'))
-        compile_file(f.name, *args, **kwargs)
+    compile_file(f.name, *args, **kwargs)
     os.remove(f.name)
 
 
