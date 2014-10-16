@@ -116,7 +116,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         self.builder.get_object( "invoices_liststore" ).clear()
     def get_contents( self ):
         return [row[0] for row in self.builder.get_object( "invoices_liststore" )]
-    def _refresh_generator( self, step=25 ):
+    def _do_refresh( self, step=25 ):
         self.currently_refreshing = True
         self.needs_refresh = False
         self.emit( 'refresh-started' )
@@ -134,7 +134,7 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
             if i % step == 0:
                 # freeze/thaw not really  necessary here as sorting is wrong because of the
                 # default sort function
-                yield True
+                logger.debug("Refreshed %d rows", i)
         self._invoices_treemodelfilter = model.filter_new()
         self._invoices_treemodelfilter.set_visible_func( self._is_row_visible )
         GLib.idle_add( self.refilter )
@@ -144,13 +144,9 @@ class InvoiceTable( Gtk.Box, ScopedDatabaseObject ):
         self.set_sensitive( True )
         self.currently_refreshing = False
         self.emit( 'refresh-ended' )
-        yield False
+        return False
     def refresh( self ):
-        if not self.needs_refresh:
-            return
-        g = self._refresh_generator()
-        if next( g ): # run once now, remaining iterations when idle
-            GLib.idle_add( next, g )
+        GLib.idle_add(self._do_refresh)
     def add_invoice( self, invoice ):
         model = self.builder.get_object( "invoices_liststore" )
         treeiter = model.append( [ invoice ] )

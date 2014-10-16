@@ -111,7 +111,9 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
     # Data interaction
     def clear( self ):
         self.builder.get_object( "customers_liststore" ).clear()
-    def _refresh_generator( self, step=25 ):
+    def _do_refresh( self, step=25 ):
+        if not self.needs_refresh:
+            return False
         self.currently_refreshing = True
         self.needs_refresh = False
         self.emit( 'refresh-started' )
@@ -130,7 +132,6 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
                 # freeze/thaw not really  necessary here as sorting is wrong because of the
                 # default sort function
                 logger.debug("Refreshed %d rows", i)
-                yield True
         self._customers_treemodelfilter = model.filter_new()
         self._customers_treemodelfilter.set_visible_func( self._is_row_visible )
         GLib.idle_add( self.refilter )
@@ -140,13 +141,9 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
         self.set_sensitive( True )
         self.currently_refreshing = False
         self.emit( 'refresh-ended' )
-        yield False
+        return False
     def refresh( self ):
-        if not self.needs_refresh:
-            return
-        g = self._refresh_generator()
-        if next( g ): # run once now, remaining iterations when idle
-            GLib.idle_add( next, g )
+        GLib.idle_add(self._do_refresh)
     @staticmethod
     def convert_customer_to_rowdata( customer ):
         if not isinstance( customer, core.database.Customer ):
