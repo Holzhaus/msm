@@ -189,14 +189,13 @@ class AbstractRenderer( threadqueue.QueueWatcherThread ):
             raise ValueError( "No rendered letters" )
         lco_template = "a4paper" # FIXME: make this configurable
         rendered_document = template.render( {'lco_template': lco_template, 'prerendered_letters':rendered_letters} )
-        datadir = os.path.normpath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'data' ) )
-        latexdir = os.path.join( datadir, 'templates', 'latex' )
-        imagedir = os.path.join( datadir, 'images' )
-        userdir = paths.config('templates', 'latex')
-        textinputs = [latexdir, imagedir]
-        if os.path.exists(userdir):
-            textinputs.insert(0, userdir)
-        pdflatex.compile_str( rendered_document, self._output_file, textinputs )
+
+        dirs = [paths.config('templates', 'latex'),
+                paths.config('images'),
+                paths.data('templates', 'latex'),
+                paths.data('images')]
+        textinputs = [dir for dir in dirs if os.path.exists(dir)]
+        pdflatex.compile_str(rendered_document, self._output_file, textinputs)
 class LetterRenderer( AbstractRenderer ):
     def __init__( self, letters, output_file, _template_env=None ):
         template_env = self._get_template_env( _template_env )
