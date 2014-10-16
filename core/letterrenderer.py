@@ -131,7 +131,14 @@ class PrerenderThread( threadqueue.AbstractQueueThread, ScopedDatabaseObject ):
         return template.render( templatevars )
     def _prerender_note( self, generic_templatevars, note ):
         templatevars = generic_templatevars.copy()
-        template = self._template_env.get_template( os.path.join( "notes", "{}.template".format( note.template ) ) )
+        # Hack: Strangely enough, we can use os.path.join() here, because
+        # jinja2 seems to expect a slash instead of a backslash when dealing
+        # with template paths (even on Windows). If os.path.join() or
+        # os.pathsep.join() or '\'.join() is used, jinja2 won't find out
+        # templates. I should probably file a bug, but if they fix it, this
+        # will break again. Besides, I'm lazy.
+        tpl_file = '/'.join(("notes", "{}.template".format(note.template)))
+        template = self._template_env.get_template(tpl_file)
         return template.render( templatevars )
 class PrerenderQueue( AbstractRendererQueue ):
     def _create_thread( self ):
