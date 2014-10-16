@@ -21,7 +21,7 @@ def compile_str(latexstr, *args, **kwargs):
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(latexstr.encode('UTF-8'))
-    compile_file(f.name, *args, **kwargs)
+        compile_file(f.name, *args, **kwargs)
     os.remove(f.name)
 
 
@@ -74,7 +74,9 @@ def compile_file(latexfile, output_file, texinputs=None):
             try:
                 subprocess.check_call(cmd, env=env, stdout=out_f,
                                       stderr=subprocess.STDOUT)
-            except subprocess.CalledProcessError:
+            except subprocess.CalledProcessError as e:
+                logger.error("Command failed with returncode %d: %r",
+                             e.returncode, e.cmd)
                 out_f.seek(0)
                 pdflatexlog = out_f.read().decode("utf-8")
                 logger.critical(pdflatexlog)
