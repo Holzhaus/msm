@@ -65,6 +65,13 @@ def compile_file(latexfile, output_file, texinputs=None):
     # Specify filename of pdf output file
     jobname = 'document'
 
+    startupinfo = None
+    if platform.system() == 'Windows':
+        # Yet another Windows workaround: This time we want to hide the command
+        # prompt that pops up when executing pdflatex. Thank you, Bill Gates!
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
     # Compile the file in a temporary directory (so we don't have to worry
     # about cleaning up the auxiliary files after compilation)
     with tempfile.TemporaryDirectory() as tmp_dirname:
@@ -89,7 +96,8 @@ def compile_file(latexfile, output_file, texinputs=None):
         with tempfile.SpooledTemporaryFile() as out_f:
             try:
                 subprocess.check_call(cmd, env=env, stdout=out_f,
-                                      stderr=subprocess.STDOUT)
+                                      stderr=subprocess.STDOUT,
+                                      startupinfo=startupinfo)
             except subprocess.CalledProcessError as e:
                 logger.error("Command failed with returncode %d: %r",
                              e.returncode, e.cmd)
