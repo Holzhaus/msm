@@ -31,6 +31,7 @@ import core.database
 import core.paths as paths
 from core.lib import pdflatex
 from core.lib import threadqueue
+from core.config import Config
 from msmgui.widgets.base import ScopedDatabaseObject
 if sys.platform.startswith( 'linux' ):
     from gi.repository import Gio # We need this as xdg-open replacement (see below)
@@ -61,7 +62,8 @@ class LatexEnvironment( jinja2.Environment ):
         self.comment_end_string = '=))'
         self.filters['escape_tex'] = self.escape_tex
         self.filters['escape_nl'] = self.escape_nl
-env_latex = LatexEnvironment( ['data/templates', paths.config('template')] )
+env_latex = LatexEnvironment([paths.data('templates'),
+                              paths.config('templates')])
 
 class AbstractRendererQueue( threadqueue.AbstractQueue ):
     __metaclass__ = abc.ABCMeta
@@ -187,7 +189,9 @@ class AbstractRenderer( threadqueue.QueueWatcherThread ):
         rendered_letters = [rendered_letter for rendered_letter in rendering_results if rendered_letter is not None]
         if len( rendered_letters ) == 0:
             raise ValueError( "No rendered letters" )
-        lco_template = "a4paper" # FIXME: make this configurable
+        lco_template = Config.get("LetterRenderer", "lco_template")
+        if not lco_template:
+            lco_template = "a4paper"
         rendered_document = template.render( {'lco_template': lco_template, 'prerendered_letters':rendered_letters} )
 
         dirs = [paths.config('templates', 'latex'),
