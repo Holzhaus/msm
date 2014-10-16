@@ -28,6 +28,7 @@ import jinja2
 import abc
 import threading
 import core.database
+import core.paths as paths
 from core.lib import pdflatex
 from core.lib import threadqueue
 from msmgui.widgets.base import ScopedDatabaseObject
@@ -50,8 +51,8 @@ class LatexEnvironment( jinja2.Environment ):
         pattern, replacement = self.__class__.NEWLINE_SUB
         newval = pattern.sub( replacement, value )
         return newval
-    def __init__( self, template_path ):
-        super().__init__( loader=jinja2.FileSystemLoader( template_path ) )
+    def __init__( self, template_paths ):
+        super().__init__( loader=jinja2.FileSystemLoader( template_paths ) )
         self.block_start_string = '((*'
         self.block_end_string = '*))'
         self.variable_start_string = '((('
@@ -60,7 +61,7 @@ class LatexEnvironment( jinja2.Environment ):
         self.comment_end_string = '=))'
         self.filters['escape_tex'] = self.escape_tex
         self.filters['escape_nl'] = self.escape_nl
-env_latex = LatexEnvironment( 'data/templates' )
+env_latex = LatexEnvironment( ['data/templates', paths.config('template')] )
 
 class AbstractRendererQueue( threadqueue.AbstractQueue ):
     __metaclass__ = abc.ABCMeta
@@ -186,11 +187,16 @@ class AbstractRenderer( threadqueue.QueueWatcherThread ):
         rendered_letters = [rendered_letter for rendered_letter in rendering_results if rendered_letter is not None]
         if len( rendered_letters ) == 0:
             raise ValueError( "No rendered letters" )
-        rendered_document = template.render( {'prerendered_letters':rendered_letters} )
+        lco_template = "a4paper" # FIXME: make this configurable
+        rendered_document = template.render( {'lco_template': lco_template, 'prerendered_letters':rendered_letters} )
         datadir = os.path.normpath( os.path.join( os.path.dirname( __file__ ), os.pardir, 'data' ) )
         latexdir = os.path.join( datadir, 'templates', 'latex' )
         imagedir = os.path.join( datadir, 'images' )
-        pdflatex.compile_str( rendered_document, self._output_file, [latexdir, imagedir] )
+        userdir = paths.config('templates', 'latex')
+        textinputs = [latexdir, imagedir]
+        if os.path.exists(userdir):
+            textinputs.insert(0, userdir)
+        pdflatex.compile_str( rendered_document, self._output_file, textinputs )
 class LetterRenderer( AbstractRenderer ):
     def __init__( self, letters, output_file, _template_env=None ):
         template_env = self._get_template_env( _template_env )
