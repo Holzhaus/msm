@@ -15,6 +15,8 @@ MSM currently needs a couple of dependencies:
 
 We currently also need [`python-pytz`](http://pytz.sourceforge.net/) at the moment, but we'll replace it with [`python-babel`](http://babel.pocoo.org/) soon (we only need `pytz` for getting country names by ISO 3661-1alpha2 codes).
 
+On windows, you'll also need [`pywin32`](sourceforge.net/projects/pywin32/).
+
 ### Installation
 
 Clone the git repository:

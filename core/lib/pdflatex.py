@@ -5,6 +5,11 @@ import shutil
 import tempfile
 import subprocess
 import logging
+import platform
+
+if platform.system() == 'Windows':
+    import win32file
+
 from core.errors import LatexError
 
 
@@ -59,9 +64,20 @@ def compile_file(latexfile, output_file, texinputs=None):
     env['TEXINPUTS'] = os.pathsep.join(new_texinputs)
     # Specify filename of pdf output file
     jobname = 'document'
+
     # Compile the file in a temporary directory (so we don't have to worry
     # about cleaning up the auxiliary files after compilation)
     with tempfile.TemporaryDirectory() as tmp_dirname:
+        if platform.system() == 'Windows':
+            # This is kind of a hack. I initalially thought that using Python I
+            # won't have to care about all these OS based issues. But I was
+            # wrong. Unfortunately, pdflatex is not able to handle abbreviated
+            # filenames in Windows' almighty 8-3 syntax. So we need to get the
+            # long filename from an abbreviated ones by using pywin32.
+            # Gosh, I hate Windows.
+            # PS: To be fair, I hate Python and pdflatex for this, too
+            latexfile = win32file.GetLongPathName(latexfile)
+            tmp_dirname = win32file.GetLongPathName(tmp_dirname)
         cmd = ['pdflatex',
                '-halt-on-error',
                '-interaction', 'nonstopmode',
