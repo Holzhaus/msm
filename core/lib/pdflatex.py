@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import subprocess
+import logging
 from core.errors import LatexError
 def compile_str( latexstr, output_file, texinputs=None ):
     """
@@ -32,6 +33,7 @@ def compile_file( latexfile, output_file, texinputs=None ):
         texinputs:
             a list of additional paths to add to the TEXINPUTS environment variable before compiling (Defaults to None)
     """
+    logger = logging.getLogger(__name__)
     # Create Environment
     env = os.environ.copy()
     # Modify environment (add $TEXINPUTS)
@@ -60,11 +62,13 @@ def compile_file( latexfile, output_file, texinputs=None ):
                '-output-directory', tmp_dirname,
                latexfile]
         # Redirect pdflatex' stdout to tempfile (and show it if an error occurs)
-        with tempfile.TemporaryFile() as out:
-            latex = subprocess.call( cmd, env=env, stdout=out, stderr=subprocess.STDOUT )
-            if latex != 0:
-                out.seek( 0 )
-                print( out.read().decode( "utf-8" ) )
+        with tempfile.SpooledTemporaryFile() as out_f:
+            try:
+                subprocess.check_call(cmd, env=env, stdout=out_f, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError:
+                out_f.seek(0)
+                pdflatexlog = out_f.read().decode("utf-8")
+                logger.critical(pdflatexlog)
                 raise LatexError()
         # Get the filename of the compiled pdf
         tmp_filename = jobname + os.extsep + 'pdf'
