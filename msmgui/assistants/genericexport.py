@@ -59,7 +59,7 @@ class GenericExportAssistant( GObject.GObject, ScopedDatabaseObject ):
         self.builder = Gtk.Builder()
         self.builder.add_from_file( paths.data("ui","assistants","genericexport.glade" ))
         self._assistant = self.builder.get_object( "content" )
-        self._assistant.set_modal( True )
+        # self._assistant.set_modal( True )
         self._assistant.set_forward_page_func( self.page_forward_func )
         if exportsettingswidget is not None:
             self.set_settingswidget( exportsettingswidget )

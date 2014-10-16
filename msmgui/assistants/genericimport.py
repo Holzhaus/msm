@@ -59,7 +59,7 @@ class GenericImportAssistant( GObject.GObject, ScopedDatabaseObject ):
         self.builder = Gtk.Builder()
         self.builder.add_from_file( paths.data("ui","assistants","genericimport.glade" ))
         self._assistant = self.builder.get_object( "content" )
-        self._assistant.set_modal( True )
+        # self._assistant.set_modal( True )
         self._assistant.set_forward_page_func( self.page_forward_func )
         if importsettingswidget is not None:
             self.set_settingswidget( importsettingswidget )
