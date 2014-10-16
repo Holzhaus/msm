@@ -129,6 +129,7 @@ class CustomerTable( Gtk.Box, ScopedDatabaseObject ):
             if i % step == 0:
                 # freeze/thaw not really  necessary here as sorting is wrong because of the
                 # default sort function
+                logger.debug("Refreshed %d rows", i)
                 yield True
         self._customers_treemodelfilter = model.filter_new()
         self._customers_treemodelfilter.set_visible_func( self._is_row_visible )
