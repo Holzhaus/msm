@@ -1,4 +1,5 @@
 import datetime
+import random
 import unidecode
 import core.plugintypes
 try:
@@ -63,12 +64,15 @@ class DirectDebitExportFormatterSEPAXML(
 class SepaDDXMLBuilder(object):
     def __init__(self):
         self.transactions = []
-        self.message_id = 'MSGID12345678912'
-        self.creation_datetime = datetime.datetime.now()
+        now = datetime.datetime.now()
+        self.message_id = '%sX%03d' % (now.strftime('%Y%m%d%H%M%S'),
+                                       random.randint(0, 999))
+        #  self.message_id = 'MSGID12345678912'
+        self.creation_datetime = now
         self.initiator_name = 'Verein Position e.V.'
         self.paymentinfo_id = 'PMTINFID1'
-        self.requested_collection_date = datetime.date.today()  # FIXME!
-        self.creditor_name = 'CREDITOR1'
+        self.requested_collection_date = now.date()  # FIXME!
+        self.creditor_name = 'Verein Position e.V.'
         self.creditor_iban = 'DE11360605910001374180'
         self.creditor_bic = 'GENODED1SPE'
         self.creditor_id = 'DE88ABO00001194007'
