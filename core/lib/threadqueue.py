@@ -3,7 +3,6 @@
 import abc
 import threading
 import queue
-from dbus.mainloop.glib import threads_init
 class AbstractQueue:
     """
     Usage:
