@@ -10,7 +10,8 @@ A simple yet powerful tool to manage magazine subscribers, written in Python 3 a
 
 MSM currently needs a couple of dependencies:
 - Gtk+ 3 and [`python-gobject`](https://wiki.gnome.org/action/show/Projects/PyGObject)
-- [`python-sqlalchemy`](http://www.sqlalchemy.org/)
+- [`sqlalchemy`](http://www.sqlalchemy.org/)
+- [`Jinja2`](http://jinja.pocoo.org/)
 - [`python-dateutil`](https://labix.org/python-dateutil)
 
 We currently also need [`python-pytz`](http://pytz.sourceforge.net/) at the moment, but we'll replace it with [`python-babel`](http://babel.pocoo.org/) soon (we only need `pytz` for getting country names by ISO 3661-1alpha2 codes).
